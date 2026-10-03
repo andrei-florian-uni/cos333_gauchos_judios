@@ -1,0 +1,13 @@
+# macOS
+.DS_Store
+
+# Python
+__pycache__/
+.pytest_cache/
+.ipynb_checkpoints/
+
+# Gravestone photos (several GB; kept out of git)
+ocr_pipeline/data/
+
+# Conda environment, created inside ocr_pipeline/ from environment.yml
+ocr_pipeline/.conda/
