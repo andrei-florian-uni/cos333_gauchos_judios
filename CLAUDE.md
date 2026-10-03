@@ -2,11 +2,12 @@
 
 ## 1. How to Use This Document
 
-This file gives Claude (and anyone else working in the repository) the context needed to work on the project. It has three sections:
+This file gives Claude (and anyone else working in the repository) the context needed to work on the project. It has four sections:
 
 1. **How to Use This Document** (this section): the structure of the file and the rules for editing it.
 2. **Project Design**: the agreed design of the project, mirrored from the *Project Design* section of the team's Notion "Semester Project" page. Treat it as the reference for what to build. Change it only when the design itself changes, and keep it in step with Notion.
-3. **Additional Context**: a running set of notes that anyone can read and add to. Conventions, decisions, gotchas and other things learned while building go here.
+3. **Code Style**: the rules all code in the repository must follow, including the checks to run before shipping any change.
+4. **Additional Context**: a running set of notes that anyone can read and add to. Conventions, decisions, gotchas and other things learned while building go here.
 
 When adding to **Additional Context**:
 
@@ -145,7 +146,18 @@ Items marked `stretch` are stretch goals, and everything else is MVP.
 
 ---
 
-## 3. Additional Context
+## 3. Code Style
+
+Every piece of code written for this project, by Claude Code or by a team member, must follow these rules.
+
+1. **Readable by a student.** Code must be fully understandable by a person reading it, and in particular by a student who did not write it. Prefer simple, explicit code over clever or compact code: use descriptive names, short functions that each do one thing, and straightforward control flow.
+2. **Commented.** All code must be commented. Every module, class and function has a docstring (or the equivalent in other languages) saying what it does, what it takes and what it returns, and comments explain the reasoning behind any step that isn't obvious from the code itself.
+3. **Pylint-clean Python 3.14.** Python code must comply with Python 3.14 standards and pass pylint with no warnings. Run pylint on every edited Python file before shipping a change, and fix any issues it reports.
+4. **Unit tested.** All code must have unit tests, and the tests must be run and pass before any change is shipped. New or changed behaviour needs new or updated tests.
+
+---
+
+## 4. Additional Context
 
 > Readable and writable. Add notes here as the project evolves; see section 1 for the conventions.
 
