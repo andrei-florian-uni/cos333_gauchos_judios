@@ -6,7 +6,7 @@ This file gives Claude (and anyone else working in the repository) the context n
 
 1. **How to Use This Document** (this section): the structure of the file and the rules for editing it.
 2. **Project Design**: the agreed design of the project, mirrored from the *Project Design* section of the team's Notion "Semester Project" page. Treat it as the reference for what to build. Change it only when the design itself changes, and keep it in step with Notion.
-3. **Code Style**: the rules all code in the repository must follow, including the checks to run before shipping any change.
+3. **Code Style**: the rules all code in the repository must follow, including the checks to run before shipping any change, and the Notebook Style that every Jupyter notebook follows.
 4. **Additional Context**: a running set of notes that anyone can read and add to. Conventions, decisions, gotchas and other things learned while building go here.
 
 When adding to **Additional Context**:
@@ -152,8 +152,37 @@ Every piece of code written for this project, by Claude Code or by a team member
 
 1. **Readable by a student.** Code must be fully understandable by a person reading it, and in particular by a student who did not write it. Prefer simple, explicit code over clever or compact code: use descriptive names, short functions that each do one thing, and straightforward control flow.
 2. **Commented.** All code must be commented. Every module, class and function has a docstring (or the equivalent in other languages) saying what it does, what it takes and what it returns, and comments explain the reasoning behind any step that isn't obvious from the code itself.
-3. **Pylint-clean Python 3.14.** Python code must comply with Python 3.14 standards and pass pylint with no warnings. Run pylint on every edited Python file before shipping a change, and fix any issues it reports.
-4. **Unit tested.** All code must have unit tests, and the tests must be run and pass before any change is shipped. New or changed behaviour needs new or updated tests.
+3. **Pylint-clean Python 3.14.** Python code must comply with Python 3.14 standards and pass pylint with no warnings. Run pylint on every edited Python file before shipping a change, and fix any issues it reports. For a notebook, export its code cells in order to a single `.py` file outside the repository and lint that file with `--disable=missing-module-docstring`, since the notebook's opening markdown cell takes the place of a module docstring.
+4. **Unit tested, tests not saved.** All code must be checked by unit tests that are run and pass before any change is shipped, and new or changed behaviour needs new or updated tests. The tests are written and run outside the repository (Claude uses its session scratchpad) and are never saved or committed: the repository holds no test files. To test a notebook, load its functions without running its cells, for example by executing only the function, class and import definitions of each code cell, so that tests never touch real data.
+
+### Notebook Style
+
+Every Jupyter notebook in the repository follows this style, modelled on the team's earlier analysis notebooks.
+
+**Structure**
+
+- The notebook is self-contained: all of its logic is defined in its own cells, and it imports no helper module from the repository.
+- It opens with one markdown cell: a bold title (`**Title**`, not a `#` heading), then a paragraph saying what the notebook does, what it reads, what it outputs and what it never modifies, then a numbered list of its outputs.
+- Every code cell is preceded by a markdown cell titled with its bold section number and name (`**1. Configuration and Helpers**`). The prose says what the cell takes, naming variables and paths in backticks, and what it does, followed by a numbered list of what it produces or checks.
+- The first code cell holds all the imports, the configuration and the shared helper functions, and ends by printing a `✓ ... loaded (...)` line.
+- The last code cell is a consistency check that rebuilds the expected result independently and compares it with what the notebook produced. It ends with a `✓ ... complete (...)` line followed by the check's result.
+- Notebooks are saved with the outputs of a full top-to-bottom run.
+
+**Code cells**
+
+- Each code cell opens with a header comment framed by `# ───` rules, 79 characters wide. Its first line is `Name  —  short description`, followed by a blank comment line and an explanation of the method and the reasoning behind it, with `•` bullets where useful.
+- Longer cells are divided by `# ═══` double rules with an UPPERCASE heading, e.g. `GLOBAL CONFIG` or `MERGE  —  copy keyed on relative path`. Smaller divisions use `# ── Name ───` single rules.
+- Configuration is UPPER_CASE constants at the top of the cell that owns them, with the `=` signs aligned and a trailing comment giving each one's meaning or unit.
+- A cell that depends on an earlier cell starts with a guard: `if "name" not in globals(): raise RuntimeError("Run the '<Section Name>' cell first.")`.
+- Results kept for later cells get descriptive lower-case names (`merge_report`). Throwaway module-level names, such as loop variables, start with an underscore (`_batch`) so they never shadow function parameters.
+- The Code Style rules above apply in full: every function has a docstring with its arguments and return value, and the exported code cells pass pylint.
+
+**Printed output**
+
+- Notebooks report in plain text. Each report is framed by `─` rules 72 characters wide, with a title line between the first two rules.
+- Report rows are indented two spaces with aligned columns. Rows start with an `OK ` or `!! ` status marker where a check applies, `[WARN]` flags a skipped input, and problem details are listed below their row as `- ...` items.
+- A summary line follows the closing rule, e.g. `2628 of 2628 photos in the output  (consistent)`.
+- Prose uses British spelling (`normalise`, `colour`), as the rest of the project does.
 
 ---
 
@@ -164,3 +193,8 @@ Every piece of code written for this project, by Claude Code or by a team member
 ### Workflow
 
 - All changes are made on individual branches, which are merged every week.
+
+### OCR pipeline
+
+- Photo layout (2026-10-03): `ocr_pipeline/data/{Women,Children}/Row N/Stone M/<photo>`, merged from the three Google Drive download batches in `data/raw/` by `merge_batches.ipynb`. Photo names describe the view (`front`, `text`, `text2`, `portrait`, `back`, ...), and about 480 are HEIC/HEIF rather than JPEG. `ocr_pipeline/data/` is git-ignored.
+- Tooling (2026-10-03): a Python 3.14 conda environment at `ocr_pipeline/.conda`, git-ignored and created from `ocr_pipeline/` with `conda env create -p .conda -f environment.yml` (conda-forge). It provides pylint, pytest and nbconvert for the checks in Code Style. Run a notebook end to end with `.conda/bin/python -m jupyter nbconvert --to notebook --execute --inplace <notebook>`, or select `.conda` as the kernel in an editor.

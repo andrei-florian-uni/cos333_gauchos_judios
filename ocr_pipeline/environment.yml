@@ -1,0 +1,13 @@
+# Conda environment for the OCR pipeline.
+# Create it inside ocr_pipeline/ with:
+#   conda env create -p .conda -f environment.yml
+name: gauchos-ocr
+channels:
+  - conda-forge
+dependencies:
+  - python=3.14
+  - ipykernel
+  - nbconvert
+  - nbformat
+  - pylint
+  - pytest
