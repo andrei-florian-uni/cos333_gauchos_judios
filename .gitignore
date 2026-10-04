@@ -1,0 +1,20 @@
+# macOS
+.DS_Store
+
+# Secrets such as API keys live in .env files, which are never committed
+.env
+
+# Python
+__pycache__/
+.pytest_cache/
+.ipynb_checkpoints/
+
+# Gravestone photos (several GB; kept out of git)
+ocr_pipeline/data/
+
+# Conda environment, created inside ocr_pipeline/ from environment.yml
+ocr_pipeline/.conda/
+
+# Working folder of extract_text_gemini.ipynb: photo uploads, batch jobs and
+# the cache of Gemini answers
+ocr_pipeline/extraction/
