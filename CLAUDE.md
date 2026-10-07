@@ -5,7 +5,7 @@
 This file gives Claude (and anyone else working in the repository) the context needed to work on the project. It has four sections:
 
 1. **How to Use This Document** (this section): the structure of the file and the rules for editing it.
-2. **Project Design**: the agreed design of the project, mirrored from the *Project Design* section of the team's Notion "Semester Project" page. Treat it as the reference for what to build. Change it only when the design itself changes, and keep it in step with Notion.
+2. **Project Design**: the agreed design of the project, mirrored from the *Project Design* callout on the team's Notion "Semester Project" page. Treat it as the reference for what to build. Notion is the source of truth: this section changes only through the sync rules below.
 3. **Code Style**: the rules all code in the repository must follow, including the checks to run before shipping any change, and the Notebook Style that every Jupyter notebook follows.
 4. **Additional Context**: a running set of notes that anyone can read and add to. Conventions, decisions, gotchas and other things learned while building go here.
 
@@ -16,15 +16,53 @@ When adding to **Additional Context**:
 - Update or remove a note when it stops being true, rather than adding a new note that contradicts it.
 - Don't repeat what the code, git history or the Project Design section already says.
 
+### Syncing Project Design with Notion
+
+Section 2 mirrors exactly one Notion block: the **Project Design** callout in the right column of the [Semester Project](https://app.notion.com/p/3d21903c4ad280eb9cf7ee5c50f0b5ac) page. The rest of that page (Documents & Links, Project Tasks, Class Deliverables, Actions, Notes) and every other Notion page are out of scope: never sync them into this file and never edit them. The comment under the Section 2 heading records the sync state:
+
+```
+<!-- notion: <page URL> (<location>) | notion-edited: <page last-edited time, UTC> | synced: <time of the last sync, UTC> -->
+```
+
+**Pull: at the start of every session**, before any other work:
+
+1. Fetch the Semester Project page with the Notion connector and read its `page_last_edited_at`.
+2. If it equals `notion-edited`, Section 2 is current. Say nothing and carry on.
+3. If it is later, compare the Project Design callout with Section 2. The timestamp covers the whole page, so an edit elsewhere on it (a ticked task, say) also moves it.
+   - If the callout's content differs, rewrite Section 2 to match it, following the mirroring rules below, and tell the user in a few lines what changed.
+   - Whether or not it differs, set `notion-edited` to the fetched time and `synced` to now.
+4. If Notion can't be reached, tell the user and work from the local copy. Never rewrite Section 2 from memory.
+
+**Push: when development forces a design change.** If work shows the design must change (a different library, table, column, route, process step, or a feature moved between `mvp` and `stretch`), do not edit Section 2 or Notion on your own:
+
+1. Raise it with the user: what has to change, why, and the exact wording proposed for the Notion callout.
+2. Only once the user approves, run the pull steps first, so the edit applies to the current Notion text. Then edit only the affected blocks inside the Project Design callout with the Notion connector.
+3. Re-fetch the page, mirror the result into Section 2 and update both timestamps.
+4. If the user declines, keep the implementation within the current design.
+
+Minor implementation details that don't contradict the design go in Additional Context, not Notion.
+
+**Mirroring rules**
+
+- Copy the text verbatim, including British spelling and typographic quotes. Don't paraphrase or "improve" it locally.
+- The callout's opening summary becomes the paragraph under the Section 2 heading. Each toggle becomes a `###` subsection with the same title, and bold lines inside toggles stay bold lines.
+- Notion's coloured `mvp`/`stretch` tags become plain code spans. Tables become Markdown tables. Mentions and links keep their Notion URLs.
+- Images (the design figures) are not copied. When Notion adds, removes or replaces a figure, mention it to the user.
+- Text that exists only locally, such as reading aids for agents, goes in a block that starts with a `<!-- local-only: ... -->` comment. Local-only blocks are kept across syncs and never written to Notion.
+
 ---
 
 ## 2. Project Design
 
-> Source: Notion › Semester Project › Project Design. The figures referenced below are on the Notion page.
+<!-- notion: https://app.notion.com/p/3d21903c4ad280eb9cf7ee5c50f0b5ac (Semester Project › right column › "Project Design" callout) | notion-edited: 2026-10-06T23:50:32Z | synced: 2026-10-07T00:03Z -->
 
-Gauchos Judíos is a public web archive of the Jewish agricultural-colony cemetery in Entre Ríos, Argentina, with complete photographic coverage. It is built from roughly 4,000 field photographs of 1,047 gravestones taken with the Effron Center and PIIRS. Visitors arrive on a landing page that introduces the community and the fieldwork, then explore the cemetery on an interactive aerial map. There they can find relatives by name, even where Spanish and Hebrew spellings diverge. The MVP is read-only and open to everyone. Stretch goals add Google sign-in, virtual stones and candles with AI-moderated messages, yahrzeit reminders, an admin interface, and a trilingual, mobile-friendly interface. An offline pipeline prepares the data beforehand: it transcribes the photographs with Gemini, measures accuracy on a hand-checked sample and loads the results into PostgreSQL.
+Gauchos Judíos is a public web archive of the Jewish agricultural-colony cemetery in Entre Ríos, Argentina, with complete photographic coverage, built from roughly 4,000 field photographs of 1,047 gravestones taken with the Effron Center and PIIRS. Visitors arrive on a landing page that introduces the community and the fieldwork, then explore the cemetery on an interactive aerial map, finding relatives by name even where Spanish and Hebrew spellings diverge. The MVP is read-only and open to everyone; stretch goals add Google sign-in, virtual stones and candles with AI-moderated messages, yahrzeit reminders, an admin interface, and a trilingual, mobile-friendly interface. An offline pipeline prepares the data beforehand, transcribing the photographs with Gemini, measuring accuracy on a hand-checked sample and loading the results into PostgreSQL. In the figures below, solid outlines mark MVP elements and dashed ochre outlines mark stretch goals.
 
-Items marked `stretch` are stretch goals, and everything else is MVP.
+<!-- local-only: reading aid for agents; never write it to Notion. -->
+> The figures are on the Notion page and are not copied here. Items marked `stretch` are stretch goals, and everything else is MVP.
+
+<!-- local-only: design change awaiting the Notion update; remove it once the callout carries it. -->
+> **Pending design change (2026-10-06):** after a meeting with Uriel, each person's transcription and `person` record hold the father's name, the husband's name, the maiden name in Latin and Hebrew script, and the age at death, and no longer the mother's name. Where this section says "parents", read the father and husband. The fields are listed in `RESPONSE_SCHEMA` in `ocr_pipeline/extract_text_gemini.ipynb`, mirrored on the Notion Scratchpad page.
 
 ### OCR and DB Ingestion
 
@@ -54,7 +92,7 @@ Items marked `stretch` are stretch goals, and everything else is MVP.
 ### Application Data Structure
 
 - PostgreSQL holds all tabular data, and photographs stay on Cloudinary, referenced by public ID.
-- **MVP archive:** four read-only tables, which are all the application needs to run.
+- **MVP archive:** four read-only tables that the application runs on alone.
   - `cemetery`: name and location, aerial-image size in pixels, and tile path.
   - `grave`: row and position, unique card number, legibility, and centroid and outline polygon in pixels for the map.
   - `person`: names in Latin and Hebrew script, parents, civil and Hebrew dates with their precision, epitaphs, normalised names and Daitch–Mokotoff codes for search, and OCR confidence with a verified flag.
@@ -200,4 +238,4 @@ Every Jupyter notebook in the repository follows this style, modelled on the tea
 - Tooling (2026-10-03): a Python 3.14 conda environment at `ocr_pipeline/.conda`, git-ignored and created from `ocr_pipeline/` with `conda env create -p .conda -f environment.yml` (conda-forge). It provides pylint, pytest and nbconvert for the checks in Code Style. Run a notebook end to end with `.conda/bin/python -m jupyter nbconvert --to notebook --execute --inplace <notebook>`, or select `.conda` as the kernel in an editor.
 - Extraction (2026-10-04): `extract_text_gemini.ipynb` sends each stone folder to `gemini-3.1-pro-preview` as one Batch API request, with the photos uploaded to the Gemini File API, and writes `extracted_text.csv` (one row per person). Its git-ignored working folder `ocr_pipeline/extraction/` holds the upload record, the job awaiting collection (`active_job.json`) and the answer cache under `cache/<prompt version>/`; the prompt version hashes the model, thinking level, prompt and schema, so editing any of them re-extracts every grave. `google-genai` was added to `environment.yml`; update an existing environment with `conda env update -p .conda -f environment.yml`.
 - Secrets (2026-10-04): API keys never appear in code or notebooks. They live in `ocr_pipeline/.env` (git-ignored), as lines such as `GEMINI_API_KEY=<key>`, loaded with python-dotenv's `load_dotenv`; a variable already set in the shell takes precedence.
-- Notebook size (2026-10-04): pylint's 1,000-line module limit applies to a notebook's exported code, so a long notebook needs concise docstrings; `extract_text_gemini.ipynb` exports to about 980 lines.
+- Notebook size (2026-10-06): pylint's 1,000-line module limit applies to a notebook's exported code, so a long notebook needs concise docstrings; `extract_text_gemini.ipynb` exports to 998 lines, so any addition must be offset by a trim.
