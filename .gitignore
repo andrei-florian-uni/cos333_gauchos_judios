@@ -19,15 +19,14 @@ ocr_pipeline/.conda/
 # the cache of Gemini answers
 ocr_pipeline/extraction/
 
-# Name-search experiments: only the notebooks, the environment, the curated
-# dictionary, the evaluation set and the results are tracked. Everything else
-# in search_algorithm/ stays local: the conda environment, downloaded models,
-# regenerable caches, the design documents and the human-review files.
+# Name-search experiments: only the notebooks, the environment, their input
+# (the curated dictionary) and their outputs are tracked, except the large
+# regenerable arrays of step 4. Everything else in search_algorithm/ stays
+# local: the conda environment, downloaded models, the PostgreSQL cluster and
+# the design documents.
 search_algorithm/*
 !search_algorithm/step_*.ipynb
 !search_algorithm/environment.yml
-!search_algorithm/dictionaries/
-search_algorithm/dictionaries/*
-!search_algorithm/dictionaries/d1_curated.csv
-!search_algorithm/eval/
-!search_algorithm/results/
+!search_algorithm/inputs/
+!search_algorithm/outputs/
+search_algorithm/outputs/*.npz

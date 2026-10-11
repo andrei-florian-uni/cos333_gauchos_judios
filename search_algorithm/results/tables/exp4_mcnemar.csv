@@ -1,3 +1,0 @@
-comparison,selected_config,other_config,selected_only_hits,other_only_hits,discordant,exact_p_value
-selected vs runner_up,exp3_K2_sum,exp3_K2_product,0,1,1,1.0
-selected vs reference,exp3_K2_sum,exp1_L3,159,1,160,2.2032134058231987e-46
