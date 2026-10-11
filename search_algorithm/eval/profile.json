@@ -1,0 +1,71 @@
+{
+ "source": "../ocr_pipeline/extracted_text.csv",
+ "rows": 825,
+ "graves": 794,
+ "rows_by_section": {
+  "children": 198,
+  "women": 627
+ },
+ "rows_with_given_and_surname": 655,
+ "eligible_rows": 639,
+ "named_rows_full_name_latin": 577,
+ "named_rows_full_name_hebrew": 441,
+ "named_rows_full_name_both": 368,
+ "women_latin_surnames": 513,
+ "women_latin_surnames_with_de": 268,
+ "hebrew_surnames": 447,
+ "hebrew_surnames_yiddish_orthography": 166,
+ "hebrew_given_names": 579,
+ "hebrew_given_names_double": 147,
+ "given_name_relation": {
+  "rows": 469,
+  "encoder_used": true,
+  "phonetic": 187,
+  "initial": 186,
+  "neither": 96,
+  "examples": {
+   "initial": [
+    "Raquel–רחל",
+    "Valentin–אב",
+    "Jose–יוסף"
+   ],
+   "phonetic": [
+    "Samuel–שמואל",
+    "Daniel–דניעל",
+    "Babe–באבע"
+   ],
+   "neither": [
+    "Hector–מרדכי אריה",
+    "Elena–יעכט מלכה",
+    "Bernardo–דובעריש"
+   ]
+  }
+ },
+ "target_persons": 637,
+ "merged_persons": 2,
+ "persons_by_coverage": {
+  "latin": 107,
+  "both": 467,
+  "hebrew": 63
+ },
+ "split_sizes": {
+  "dev": 507,
+  "test": 130,
+  "fold_1": 100,
+  "fold_2": 101,
+  "fold_3": 102,
+  "fold_4": 102,
+  "fold_5": 102
+ },
+ "d1": {
+  "groups": 105,
+  "forms": 564,
+  "kinds": {
+   "cognate": 264,
+   "yiddish": 143,
+   "hypocoristic": 75,
+   "civil": 26,
+   "translation": 56
+  }
+ }
+}
