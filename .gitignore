@@ -18,3 +18,9 @@ ocr_pipeline/.conda/
 # Working folder of extract_text_gemini.ipynb: photo uploads, batch jobs and
 # the cache of Gemini answers
 ocr_pipeline/extraction/
+
+# Name-search experiments: conda environment, downloaded models and fonts,
+# and the regenerable caches (embeddings, phonetic codes, PostgreSQL cluster)
+search_algorithm/.conda/
+search_algorithm/assets/
+search_algorithm/cache/
