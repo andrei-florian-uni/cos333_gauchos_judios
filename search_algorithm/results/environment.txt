@@ -103,6 +103,7 @@ pyee==13.0.1
 Pygments @ file:///home/conda/feedstock_root/build_artifacts/bld/rattler-build_pygments_1786995678/work
 pylint @ file:///home/conda/feedstock_root/build_artifacts/bld/rattler-build_pylint_1791030530/work
 pyparsing @ file:///home/conda/feedstock_root/build_artifacts/bld/rattler-build_pyparsing_1790063282/work
+pypdfium2==5.14.0
 pytest @ file:///home/conda/feedstock_root/build_artifacts/bld/rattler-build_pytest_1782127176/work
 python-bidi==0.4.2
 python-dateutil @ file:///home/conda/feedstock_root/build_artifacts/bld/rattler-build_python-dateutil_1751104122/work

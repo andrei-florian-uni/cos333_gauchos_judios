@@ -58,20 +58,6 @@
   "status": "ok",
   "torch_version": "2.14.1"
  },
- "report": {
-  "purpose": "Playwright Chromium and the report fonts",
-  "status": "ok",
-  "chromium": "153.0.8010.12",
-  "fonts": [
-   "Inter.ttf",
-   "LiberationSerif-Bold.ttf",
-   "LiberationSerif-Regular.ttf",
-   "texgyrepagella-bold.otf",
-   "texgyrepagella-italic.otf",
-   "texgyrepagella-regular.otf"
-  ],
-  "missing_fonts": []
- },
  "qs2_llm": {
   "purpose": "ANTHROPIC_API_KEY for the optional QS2 LLM fallback",
   "status": "not_run:ANTHROPIC_API_KEY is not set"

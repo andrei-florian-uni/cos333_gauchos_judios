@@ -1,0 +1,5 @@
+role,config_id,config_hash,params,component_params
+rule,exp3_K2_sum,,"{""rule"": ""simplest configuration within the 95 % CI of the best primary score with p95 latency < 500 ms"", ""best_primary_ci"": [0.8863, 0.9215]}",
+selected,exp3_K2_sum,79f868769bea,"{""lam"": 0.8, ""tau_d"": 0.7500001788139343}","{""exp2_P3_E4_D3_archive_dict_cutoff"": {""c"": 0.7, ""tau_link"": 0.9, ""lam"": 0.9}, ""exp2_P3_E1_D3_archive_dict_cutoff"": {""c"": 0.7, ""tau_link"": 0.85, ""lam"": 0.9}, ""exp1_L3"": {""c"": null, ""tau_link"": null, ""lam"": 1.0}}"
+runner_up,exp3_K2_product,f48958173aaf,"{""lam"": 0.9, ""tau_d"": 0.6250002235174357}","{""exp2_P3_E4_D3_archive_dict_cutoff"": {""c"": 0.7, ""tau_link"": 0.9, ""lam"": 0.9}, ""exp2_P3_E1_D3_archive_dict_cutoff"": {""c"": 0.7, ""tau_link"": 0.85, ""lam"": 0.9}, ""exp1_L3"": {""c"": null, ""tau_link"": null, ""lam"": 1.0}}"
+reference,exp1_L3,2abce0a5b94c,"{""c"": null, ""tau_link"": null, ""lam"": 1.0, ""tau_d"": 0.525}",{}
