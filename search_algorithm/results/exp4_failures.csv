@@ -1,0 +1,32 @@
+query_id,query_text,target_names,top3_returned,cause,review
+QS3-P0003,אב הורוויץ,Valentin Hurvitz / אב הורוויץ,Valentin Hurvitz / אב הורוויץ | Clara Hurovich / חיה הורוויץ | Clara Flesler Huruvich / חיה רבקה הורוויץ,transcription_error,pending
+QS3-P0019,מרדכי אריה יאימאוויטש,Hector Leonardo Jaimovich / מרדכי אריה יאימאוויטש,Maria Rabey / מרים ראבי | מאיר אדלר | Aida Levit / אידה לעוויט,ranking_error,pending
+QS3-P0068,שפרינצה סאדיגורסקי,Susana Sadigursky / שפרינצה סאדיגורסקי,Sofia Schneeroff / שרה שניארף | שיינה שרה שפירא | שיינע רחל שפיטאלניק,ranking_error,pending
+QS3-P0076,אב הורוויץ,Valentin Hurvitz / אב הורוויץ,Valentin Hurvitz / אב הורוויץ | Clara Hurovich / חיה הורוויץ | Clara Flesler Huruvich / חיה רבקה הורוויץ,transcription_error,pending
+QS3-P0093,הינדי אקסמן,Rosa Ocsman / הינדי אקסמן,Ana Matzkin / חנה מצקין | Estela Yasky / צביה עטיל יאסקין | Clara Matzkin / חיה קלארא מאצקין,transcription_error,pending
+QS3-P0220,ויטיל גאלדענטאער,Victoria Goldentaer / ויטיל גאלדענטאער,Victoria Goldentaer / ויטיל גאלדענטאער | Aida Levit / אידה לעוויט | Ana Levit / חנה לעוויט,ranking_error,pending
+QS3-P0322,מרכה טובה הורוויץ,Matilde Hurvitz / מרכה טובה הורוויץ,Miguel Hurevich / מיכל הורוויץ | Elena Hurvich / גיטל עלקא הורוויץ | Clara Hurovich / חיה הורוויץ,transcription_error,pending
+QS3-P0323,חיה רחל העקער,Fanny Eker / חיה רחל העקער,מאלי קאסרי | Rosa Koler / רחל קאלער | Sara Yeger / שרה עגער,ranking_error,pending
+QS3-P0344,אלימלך עמבון,Alter Embon / אלימלך עמבון,Olga Golde Embon / גאלדא עמבון | Rosa Embon / רייזע עמבאם | Embon / שמעון,ranking_error,pending
+QS3-P0345,פרוידע הוראוויטש,Sofia Hurovich / פרוידע הוראוויטש,Clara Flesler Huruvich / חיה רבקה הורוויץ | Fanny Jraytoy / פאני חראטוי | Valentin Hurvitz / אב הורוויץ,ranking_error,pending
+QS3-P0351,גיטל דוליצקי,Luisa Dulitzky / גיטל דוליצקי,Luisa Dulitzky / גיטל דוליצקי | Angelita Volin / גיטל וואלין | גיטל שיינרמאן,ranking_error,pending
+QS3-P0445,דבורה סאראקין,Elvira Wulfshon Sorokin / דבורה סאראקין,Sorokin / רבקה סמיליאנסקי | Marcos Gerschuny / דוב מאיר גרשאני | Catalina Sorokin,ranking_error,pending
+QS3-P0448,העסיא קעסעלמאן,Celina Kesselman / העסיא קעסעלמאן,Sara Kesselman / שרה קעסעלמאן | Clara Kesselman / חייקע קעסעלמאן | Ana Salzman / חנה גיטל זאלצמאן,ranking_error,pending
+QS3-P0488,פרומא רחל ראזענפעלד,Fanny Rosenfeld / פרומא רחל ראזענפעלד,Sara Braun / חיה שרה בראון | Freide Rojel Palma / פריידע רחל פאלמא | Maria Fridman / רחל לאה פרידמאן,missing_equivalence,pending
+QS4-P0003,Valentin Hurvitz,Valentin Hurvitz / אב הורוויץ,Valentin Hurvitz / אב הורוויץ | Pascual Gurevich / פסח גורעוויטש | Miguel Hurevich / מיכל הורוויץ,ranking_error,pending
+QS4-P0019,Hector Leonardo Jaimovich,Hector Leonardo Jaimovich / מרדכי אריה יאימאוויטש,Esther Lande / אסתר רחל לאנדע | Lunita Anahory Cohen | Hector Leonardo Jaimovich / מרדכי אריה יאימאוויטש,ranking_error,pending
+QS4-P0068,Susana Sadigursky,Susana Sadigursky / שפרינצה סאדיגורסקי,Susana Aranovich | Susana Sadigursky / שפרינצה סאדיגורסקי | Elisa Zonis / זיסל זאניס,ranking_error,pending
+QS4-P0076,Valentin Hurvitz,Valentin Hurvitz / אב הורוויץ,Valentin Hurvitz / אב הורוויץ | Pascual Gurevich / פסח גורעוויטש | Miguel Hurevich / מיכל הורוויץ,ranking_error,pending
+QS4-P0092,Esther Palatsky,Esther Palatsky / גיטל פאלאטסקי,Maria Ae Pasik / אלטע איטע מאריא פאסיק | Clara Polak / חיה קלארא פאלאק | David Polisuk / דוד פאליסוק,ranking_error,pending
+QS4-P0093,Rosa Ocsman,Rosa Ocsman / הינדי אקסמן,Maria Susman / מרים | Raquel Arcusin / רחל ארקושין | Pesa Lea Paulina Luisa Arcusin / פסי לאה ארקושין,transcription_error,pending
+QS4-P0220,Victoria Goldentaer,Victoria Goldentaer / ויטיל גאלדענטאער,Victoria Goldentaer / ויטיל גאלדענטאער | Ana Goldstraj / חנה גאלדשטרוי | Sara Goldstein / שרה גאלדשטיין,ranking_error,pending
+QS4-P0301,Sara Man,Sara Man / עדיל מאן,Sofia Man / שרה שפרינצא מאן | Liliana Noemí Carlin | Sara Schor Carlin / שרה לאה,ranking_error,pending
+QS4-P0322,Matilde Hurvitz,Matilde Hurvitz / מרכה טובה הורוויץ,Miguel Hurevich / מיכל הורוויץ | Miriam Hurvitz | Rosa Gorobetz / רייזל גוראבעץ,ranking_error,pending
+QS4-P0323,Fanny Eker,Fanny Eker / חיה רחל העקער,אסתר פינקין | Fanny Eker / חיה רחל העקער | Julio Enrique Jajan,ranking_error,pending
+QS4-P0344,Alter Embon,Alter Embon / אלימלך עמבון,Olga Golde Embon / גאלדא עמבון | Sara Embon / שרה היינבאם | Esfira Hocsman / אסתר מלכה אקסמאן,ranking_error,pending
+QS4-P0345,Sofia Hurovich,Sofia Hurovich / פרוידע הוראוויטש,Clara Hurovich / חיה הורוויץ | Clara Flesler Huruvich / חיה רבקה הורוויץ | Miriam Hurvitz,transcription_error,pending
+QS4-P0351,Luisa Dulitzky,Luisa Dulitzky / גיטל דוליצקי,Elisa Zonis / זיסל זאניס | Luisa Butinoff / לאה | Luisa Gluschankov / לאה,ranking_error,pending
+QS4-P0445,Elvira Wulfshon Sorokin,Elvira Wulfshon Sorokin / דבורה סאראקין,Elena Sorokin | Sofia Volosin / שרה וואלאשין | Sara Voloschin Schlaaf,ranking_error,pending
+QS4-P0448,Celina Kesselman,Celina Kesselman / העסיא קעסעלמאן,Clara Kesselman / חייקע קעסעלמאן | Sara Kesselman / שרה קעסעלמאן | Ana Salzman / חנה גיטל זאלצמאן,ranking_error,pending
+QS4-P0488,Fanny Rosenfeld,Fanny Rosenfeld / פרומא רחל ראזענפעלד,Faina Ines Braver / פיינא אינעס בראווער | Fanny Fridman / פאני פרידמאן | בן ציון יעקב,ranking_error,pending
+QS4-P0553,Maria Hutin,Maria Hutin / רבקה הוטין,Sara Chutin / שרה רייזל | Haya Miriam Kohan / חיה מרים | Kali Miszrahi / קלי מזרחי,ranking_error,pending

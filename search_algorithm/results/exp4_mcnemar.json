@@ -1,0 +1,12 @@
+{
+ "runner_up": {
+  "selected_only": 0,
+  "other_only": 1,
+  "p_value": 1.0
+ },
+ "reference": {
+  "selected_only": 159,
+  "other_only": 1,
+  "p_value": 2.2032134058231987e-46
+ }
+}
