@@ -10,11 +10,10 @@ channels:
   - conda-forge
 dependencies:
   - python=3.14
-  # Numerics, statistics and the K4 logistic regression
+  # Numerics, and the grouped split of step 1
   - numpy
-  - scipy
   - scikit-learn
-  # Embedding models (E1–E4) and their weights
+  # Embedding models (E1–E3) and their weights
   - pytorch
   - safetensors
   - sentence-transformers
@@ -25,13 +24,10 @@ dependencies:
   # Local PostgreSQL cluster for L2 (pg_trgm) and L3 (fuzzystrmatch)
   - postgresql>=16
   - psycopg
-  # Optional LLM fallback for QS2 diaspora spellings
-  - anthropic
   # Notebooks and code checks
   - ipykernel
   - nbconvert
   - nbformat
   - pylint
   - pytest
-  - python-dotenv
   - pip

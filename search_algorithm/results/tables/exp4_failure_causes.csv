@@ -1,4 +1,0 @@
-cause,failed_queries,share_of_failures,share_of_cross_script_queries
-ranking_error,24,0.7742,0.1875
-transcription_error,6,0.1935,0.0469
-missing_equivalence,1,0.0323,0.0078
