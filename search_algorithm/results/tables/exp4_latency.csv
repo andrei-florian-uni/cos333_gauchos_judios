@@ -1,0 +1,4 @@
+role,config_id,cold_load_ms,cold_first_query_ms,warm_p50_ms,warm_p95_ms
+selected,exp3_K2_sum,45.9,84.38,67.74,110.5
+runner_up,exp3_K2_product,56.55,72.67,67.85,115.02
+reference,exp1_L3,48.28,0.53,0.16,0.26

@@ -2,7 +2,6 @@
 # Create it inside search_algorithm/ with:
 #   conda env create -p .conda -f environment.yml
 #   .conda/bin/pip install --no-deps abydos==0.5.0
-#   .conda/bin/python -m playwright install chromium
 # Abydos (Beider–Morse and Daitch–Mokotoff in Python) is installed without its
 # dependencies because its pinned requirements no longer resolve; numpy and
 # deprecation, which it needs at run time, are listed below.
@@ -26,9 +25,6 @@ dependencies:
   # Local PostgreSQL cluster for L2 (pg_trgm) and L3 (fuzzystrmatch)
   - postgresql>=16
   - psycopg
-  # Report figures
-  - matplotlib
-  - python-bidi
   # Optional LLM fallback for QS2 diaspora spellings
   - anthropic
   # Notebooks and code checks
@@ -39,6 +35,3 @@ dependencies:
   - pytest
   - python-dotenv
   - pip
-  - pip:
-      # PDF rendering of the results report (Chromium is installed separately)
-      - playwright
