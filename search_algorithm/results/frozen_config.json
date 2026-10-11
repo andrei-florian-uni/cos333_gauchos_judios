@@ -1,0 +1,458 @@
+{
+ "rule": "simplest configuration within the 95 % CI of the best primary score with p95 latency < 500 ms",
+ "best": "exp3_K2_sum",
+ "best_primary_ci": [
+  0.8863,
+  0.9215
+ ],
+ "selected": {
+  "spec": {
+   "config_id": "exp3_K2_sum",
+   "experiment": "exp3",
+   "generator": "exp2_P3_E4_D3_archive_dict_cutoff+exp2_P3_E1_D3_archive_dict_cutoff+exp1_L3",
+   "ranker": "K2",
+   "aggregation": "sum",
+   "components": [
+    {
+     "config_id": "exp2_P3_E4_D3_archive_dict_cutoff",
+     "experiment": "exp2",
+     "generator": "E4",
+     "dictionary": "D3",
+     "placement": "P3",
+     "vocab": "archive+dict",
+     "retrieval": "cutoff",
+     "ranker": "K2",
+     "aggregation": "mean"
+    },
+    {
+     "config_id": "exp2_P3_E1_D3_archive_dict_cutoff",
+     "experiment": "exp2",
+     "generator": "E1",
+     "dictionary": "D3",
+     "placement": "P3",
+     "vocab": "archive+dict",
+     "retrieval": "cutoff",
+     "ranker": "K2",
+     "aggregation": "mean"
+    },
+    {
+     "config_id": "exp1_L3",
+     "experiment": "exp1",
+     "generator": "L3",
+     "dictionary": "D0",
+     "placement": "",
+     "vocab": "",
+     "retrieval": "",
+     "ranker": "K1",
+     "aggregation": "mean"
+    }
+   ]
+  },
+  "params": {
+   "lam": 0.8,
+   "tau_d": 0.7500001788139343
+  },
+  "component_params": {
+   "exp2_P3_E4_D3_archive_dict_cutoff": {
+    "c": 0.7,
+    "tau_link": 0.9,
+    "lam": 0.9
+   },
+   "exp2_P3_E1_D3_archive_dict_cutoff": {
+    "c": 0.7,
+    "tau_link": 0.85,
+    "lam": 0.9
+   },
+   "exp1_L3": {
+    "c": null,
+    "tau_link": null,
+    "lam": 1.0
+   }
+  },
+  "k4_signals": [
+   "E1",
+   "E4",
+   "L2",
+   "L3",
+   "L4",
+   "D4"
+  ],
+  "config_hash": "79f868769bea"
+ },
+ "runner_up": {
+  "spec": {
+   "config_id": "exp3_K2_product",
+   "experiment": "exp3",
+   "generator": "exp2_P3_E4_D3_archive_dict_cutoff+exp2_P3_E1_D3_archive_dict_cutoff+exp1_L3",
+   "ranker": "K2",
+   "aggregation": "product",
+   "components": [
+    {
+     "config_id": "exp2_P3_E4_D3_archive_dict_cutoff",
+     "experiment": "exp2",
+     "generator": "E4",
+     "dictionary": "D3",
+     "placement": "P3",
+     "vocab": "archive+dict",
+     "retrieval": "cutoff",
+     "ranker": "K2",
+     "aggregation": "mean"
+    },
+    {
+     "config_id": "exp2_P3_E1_D3_archive_dict_cutoff",
+     "experiment": "exp2",
+     "generator": "E1",
+     "dictionary": "D3",
+     "placement": "P3",
+     "vocab": "archive+dict",
+     "retrieval": "cutoff",
+     "ranker": "K2",
+     "aggregation": "mean"
+    },
+    {
+     "config_id": "exp1_L3",
+     "experiment": "exp1",
+     "generator": "L3",
+     "dictionary": "D0",
+     "placement": "",
+     "vocab": "",
+     "retrieval": "",
+     "ranker": "K1",
+     "aggregation": "mean"
+    }
+   ]
+  },
+  "params": {
+   "lam": 0.9,
+   "tau_d": 0.6250002235174357
+  },
+  "component_params": {
+   "exp2_P3_E4_D3_archive_dict_cutoff": {
+    "c": 0.7,
+    "tau_link": 0.9,
+    "lam": 0.9
+   },
+   "exp2_P3_E1_D3_archive_dict_cutoff": {
+    "c": 0.7,
+    "tau_link": 0.85,
+    "lam": 0.9
+   },
+   "exp1_L3": {
+    "c": null,
+    "tau_link": null,
+    "lam": 1.0
+   }
+  },
+  "k4_signals": [
+   "E1",
+   "E4",
+   "L2",
+   "L3",
+   "L4",
+   "D4"
+  ],
+  "config_hash": "f48958173aaf"
+ },
+ "reference": {
+  "spec": {
+   "config_id": "exp1_L3",
+   "experiment": "exp1",
+   "generator": "L3",
+   "dictionary": "D0",
+   "placement": "",
+   "vocab": "",
+   "retrieval": "",
+   "ranker": "K1",
+   "aggregation": "mean"
+  },
+  "params": {
+   "c": null,
+   "tau_link": null,
+   "lam": 1.0,
+   "tau_d": 0.525
+  },
+  "config_hash": "2abce0a5b94c"
+ },
+ "decision_table": [
+  {
+   "config_id": "exp1_E1",
+   "level": 2,
+   "components": 1,
+   "primary": 0.7415,
+   "within_ci_of_best": false,
+   "under_latency_budget": true
+  },
+  {
+   "config_id": "exp1_E2",
+   "level": 2,
+   "components": 1,
+   "primary": 0.7112,
+   "within_ci_of_best": false,
+   "under_latency_budget": true
+  },
+  {
+   "config_id": "exp1_E3a",
+   "level": 2,
+   "components": 1,
+   "primary": 0.5683,
+   "within_ci_of_best": false,
+   "under_latency_budget": true
+  },
+  {
+   "config_id": "exp1_E3b",
+   "level": 2,
+   "components": 1,
+   "primary": 0.6019,
+   "within_ci_of_best": false,
+   "under_latency_budget": true
+  },
+  {
+   "config_id": "exp1_E4",
+   "level": 2,
+   "components": 1,
+   "primary": 0.7346,
+   "within_ci_of_best": false,
+   "under_latency_budget": true
+  },
+  {
+   "config_id": "exp1_L1",
+   "level": 1,
+   "components": 1,
+   "primary": 0.0852,
+   "within_ci_of_best": false,
+   "under_latency_budget": true
+  },
+  {
+   "config_id": "exp1_L2",
+   "level": 1,
+   "components": 1,
+   "primary": 0.4464,
+   "within_ci_of_best": false,
+   "under_latency_budget": true
+  },
+  {
+   "config_id": "exp1_L3",
+   "level": 1,
+   "components": 1,
+   "primary": 0.495,
+   "within_ci_of_best": false,
+   "under_latency_budget": true
+  },
+  {
+   "config_id": "exp1_L4",
+   "level": 1,
+   "components": 1,
+   "primary": 0.4377,
+   "within_ci_of_best": false,
+   "under_latency_budget": true
+  },
+  {
+   "config_id": "exp2_P1_D1",
+   "level": 3,
+   "components": 1,
+   "primary": 0.0893,
+   "within_ci_of_best": false,
+   "under_latency_budget": true
+  },
+  {
+   "config_id": "exp2_P2_E1_D1",
+   "level": 3,
+   "components": 2,
+   "primary": 0.8118,
+   "within_ci_of_best": false,
+   "under_latency_budget": true
+  },
+  {
+   "config_id": "exp2_P2_E4_D1",
+   "level": 3,
+   "components": 2,
+   "primary": 0.8243,
+   "within_ci_of_best": false,
+   "under_latency_budget": true
+  },
+  {
+   "config_id": "exp2_P1_D2",
+   "level": 3,
+   "components": 1,
+   "primary": 0.0857,
+   "within_ci_of_best": false,
+   "under_latency_budget": true
+  },
+  {
+   "config_id": "exp2_P2_E1_D2",
+   "level": 3,
+   "components": 2,
+   "primary": 0.8187,
+   "within_ci_of_best": false,
+   "under_latency_budget": true
+  },
+  {
+   "config_id": "exp2_P2_E4_D2",
+   "level": 3,
+   "components": 2,
+   "primary": 0.8264,
+   "within_ci_of_best": false,
+   "under_latency_budget": true
+  },
+  {
+   "config_id": "exp2_P1_D3",
+   "level": 3,
+   "components": 1,
+   "primary": 0.0903,
+   "within_ci_of_best": false,
+   "under_latency_budget": true
+  },
+  {
+   "config_id": "exp2_P2_E1_D3",
+   "level": 3,
+   "components": 2,
+   "primary": 0.8455,
+   "within_ci_of_best": false,
+   "under_latency_budget": true
+  },
+  {
+   "config_id": "exp2_P2_E4_D3",
+   "level": 3,
+   "components": 2,
+   "primary": 0.8551,
+   "within_ci_of_best": false,
+   "under_latency_budget": true
+  },
+  {
+   "config_id": "exp2_P3_E1_D3_archive_cutoff",
+   "level": 3,
+   "components": 2,
+   "primary": 0.8726,
+   "within_ci_of_best": false,
+   "under_latency_budget": true
+  },
+  {
+   "config_id": "exp2_P3_E1_D3_archive_top5",
+   "level": 3,
+   "components": 2,
+   "primary": 0.8441,
+   "within_ci_of_best": false,
+   "under_latency_budget": true
+  },
+  {
+   "config_id": "exp2_P3_E1_D3_archive_dict_cutoff",
+   "level": 3,
+   "components": 2,
+   "primary": 0.8757,
+   "within_ci_of_best": false,
+   "under_latency_budget": true
+  },
+  {
+   "config_id": "exp2_P3_E1_D3_archive_dict_top5",
+   "level": 3,
+   "components": 2,
+   "primary": 0.8289,
+   "within_ci_of_best": false,
+   "under_latency_budget": true
+  },
+  {
+   "config_id": "exp2_P3_E1_D1_archive_dict_cutoff",
+   "level": 3,
+   "components": 2,
+   "primary": 0.8452,
+   "within_ci_of_best": false,
+   "under_latency_budget": true
+  },
+  {
+   "config_id": "exp2_P3_E1_D2_archive_dict_cutoff",
+   "level": 3,
+   "components": 2,
+   "primary": 0.8507,
+   "within_ci_of_best": false,
+   "under_latency_budget": true
+  },
+  {
+   "config_id": "exp2_P3_E4_D1_archive_dict_cutoff",
+   "level": 3,
+   "components": 2,
+   "primary": 0.8678,
+   "within_ci_of_best": false,
+   "under_latency_budget": true
+  },
+  {
+   "config_id": "exp2_P3_E4_D2_archive_dict_cutoff",
+   "level": 3,
+   "components": 2,
+   "primary": 0.865,
+   "within_ci_of_best": false,
+   "under_latency_budget": true
+  },
+  {
+   "config_id": "exp2_P3_E4_D3_archive_dict_cutoff",
+   "level": 3,
+   "components": 2,
+   "primary": 0.8849,
+   "within_ci_of_best": false,
+   "under_latency_budget": true
+  },
+  {
+   "config_id": "exp3_K1_sum",
+   "level": 4,
+   "components": 3,
+   "primary": 0.8645,
+   "within_ci_of_best": false,
+   "under_latency_budget": true
+  },
+  {
+   "config_id": "exp3_K2_sum",
+   "level": 4,
+   "components": 3,
+   "primary": 0.9048,
+   "within_ci_of_best": true,
+   "under_latency_budget": true
+  },
+  {
+   "config_id": "exp3_K3_sum",
+   "level": 4,
+   "components": 3,
+   "primary": 0.7535,
+   "within_ci_of_best": false,
+   "under_latency_budget": true
+  },
+  {
+   "config_id": "exp3_K4_sum",
+   "level": 5,
+   "components": 3,
+   "primary": 0.886,
+   "within_ci_of_best": false,
+   "under_latency_budget": true
+  },
+  {
+   "config_id": "exp3_K1_product",
+   "level": 4,
+   "components": 3,
+   "primary": 0.8598,
+   "within_ci_of_best": false,
+   "under_latency_budget": true
+  },
+  {
+   "config_id": "exp3_K2_product",
+   "level": 4,
+   "components": 3,
+   "primary": 0.9039,
+   "within_ci_of_best": true,
+   "under_latency_budget": true
+  },
+  {
+   "config_id": "exp3_K3_product",
+   "level": 4,
+   "components": 3,
+   "primary": 0.8778,
+   "within_ci_of_best": false,
+   "under_latency_budget": true
+  },
+  {
+   "config_id": "exp3_K4_product",
+   "level": 5,
+   "components": 3,
+   "primary": 0.8818,
+   "within_ci_of_best": false,
+   "under_latency_budget": true
+  }
+ ]
+}
