@@ -1,0 +1,11 @@
+metric,value
+transcription rows,825
+graves,794
+eligible rows,639
+persons,637
+persons with both names,467
+persons with hebrew names,63
+persons with latin names,107
+train persons,381
+validation persons,126
+test persons,130

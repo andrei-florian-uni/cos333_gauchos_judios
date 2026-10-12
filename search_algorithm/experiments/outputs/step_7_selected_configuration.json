@@ -1,0 +1,60 @@
+{
+  "selected": {
+    "experiment": "2",
+    "config_id": "P3_e1_d3_archive_cutoff",
+    "configuration": {
+      "components": [
+        {
+          "generator": "e1",
+          "cutoff": 0.6,
+          "placement": "P3",
+          "dictionary": "d3",
+          "vocab": "archive",
+          "retrieval": "cutoff",
+          "tau_link": 0.95
+        }
+      ],
+      "ranker": "K2",
+      "lambda": 0.9,
+      "aggregation": "sum"
+    },
+    "validation": {
+      "r_at_5_QS1": 0.9554,
+      "r_at_5_QS2": 1.0,
+      "r_at_5_QS3": 0.8182,
+      "r_at_5_QS4": 0.8571,
+      "r_at_5_QS5": 0.8488,
+      "r_at_5": 0.8959,
+      "mrr": 0.799
+    }
+  },
+  "reference": {
+    "experiment": "1",
+    "config_id": "l3",
+    "configuration": {
+      "components": [
+        {
+          "generator": "l3",
+          "cutoff": null,
+          "placement": "",
+          "dictionary": "",
+          "vocab": "",
+          "retrieval": "",
+          "tau_link": null
+        }
+      ],
+      "ranker": "K1",
+      "lambda": 1.0,
+      "aggregation": "sum"
+    },
+    "validation": {
+      "r_at_5_QS1": 0.7679,
+      "r_at_5_QS2": 0.9894,
+      "r_at_5_QS3": 0.4286,
+      "r_at_5_QS4": 0.3766,
+      "r_at_5_QS5": 0.6232,
+      "r_at_5": 0.6371,
+      "mrr": 0.5532
+    }
+  }
+}
