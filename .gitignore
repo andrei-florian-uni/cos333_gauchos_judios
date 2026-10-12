@@ -18,3 +18,25 @@ ocr_pipeline/.conda/
 # Working folder of extract_text_gemini.ipynb: photo uploads, batch jobs and
 # the cache of Gemini answers
 ocr_pipeline/extraction/
+
+# Name search: the shared conda environment sits in search_algorithm/ and
+# stays local; only its environment.yml is tracked.
+search_algorithm/*
+!search_algorithm/environment.yml
+
+# Experiments: only the notebooks, their input (the curated dictionary) and
+# their outputs are tracked, except the large regenerable arrays of step 4.
+# Downloaded models, the PostgreSQL cluster and the design documents stay local.
+!search_algorithm/experiments/
+search_algorithm/experiments/*
+!search_algorithm/experiments/step_*.ipynb
+!search_algorithm/experiments/inputs/
+!search_algorithm/experiments/outputs/
+search_algorithm/experiments/outputs/*.npz
+
+# Final algorithm: tracked, except the downloaded E1 weights and the vector
+# cache, rebuilt with
+# `python search_algorithm/final_algorithm/search.py --download-weights --build-vectors`.
+!search_algorithm/final_algorithm/
+search_algorithm/final_algorithm/data/e1_model.safetensors
+search_algorithm/final_algorithm/data/name_vectors.npz
