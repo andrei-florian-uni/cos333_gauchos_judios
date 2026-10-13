@@ -97,13 +97,25 @@ function LandingPage() {
   const showDropdown = trimmedQuery.length >= 2;
 
   /**
-   * Updates typeahead suggestions when the visitor types 2 or more letters.
+   * Updates the search input value and clears suggestions immediately when fewer than 2 letters.
+   *
+   * @param {React.ChangeEvent<HTMLInputElement>} event - The input change event.
+   */
+  function handleSearchChange(event) {
+    const nextValue = event.target.value;
+    setSearchQuery(nextValue);
+    if (nextValue.trim().length < 2) {
+      setSuggestions([]);
+      setActiveIndex(0);
+    }
+  }
+
+  /**
+   * Fetches typeahead suggestions when the visitor types 2 or more letters.
    * Queries /api/search first and falls back to local sample records if offline.
    */
   useEffect(() => {
     if (trimmedQuery.length < 2) {
-      setSuggestions([]);
-      setActiveIndex(0);
       return undefined;
     }
 
@@ -294,7 +306,7 @@ function LandingPage() {
                       className="hero-search-input"
                       placeholder="Search for a name..."
                       value={searchQuery}
-                      onChange={(event) => setSearchQuery(event.target.value)}
+                      onChange={handleSearchChange}
                       onKeyDown={handleSearchKeyDown}
                     />
                   </Form.Group>
