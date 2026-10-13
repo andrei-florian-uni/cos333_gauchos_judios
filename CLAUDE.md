@@ -261,5 +261,5 @@ Every Jupyter notebook in the repository follows this style, modelled on the tea
 
 ### Frontend
 
-- Layout (2026-10-12): `frontend/` holds the React 19 single-page app built with Vite, styled with `react-bootstrap` (Bootstrap 5.3) and routed with `react-router-dom`. Run locally from `frontend/` with `npm install` and `npm run dev`, and lint before shipping with `npm run lint`.
-- Landing page (2026-10-12): `frontend/src/LandingPage.jsx` implements regions H1–H5 at `/` (hero video with pause toggle, map and smooth-scroll actions, name search box forwarding queries to `/explore?q=<query>`, community history photo carousel, two-sided timeline, and footer). `frontend/src/App.jsx` provides a placeholder route at `/explore` ready for the Leaflet cemetery explorer component.
+- Layout (2026-10-13): `frontend/` holds the React 19 single-page app built with Vite, styled with `react-bootstrap` (Bootstrap 5.3) and routed with `react-router-dom`. Run locally from `frontend/` with `npm install` and `npm run dev`, and lint before shipping with `npm run lint`.
+- Landing page (2026-10-13): `frontend/src/LandingPage.jsx` implements regions H1–H5 at `/` aligned with the detailed PDF wireframes. Features a live typeahead search dropdown hitting `/api/search` (with fallback sample data for local dev), a responsive history carousel, and a scroll-fade timeline. `frontend/src/App.jsx` provides placeholder routes at `/explore` and `/record/:ref` ready for the Leaflet cemetery explorer component.
