@@ -1,66 +1,82 @@
 /**
  * Landing page component for the Gauchos Judíos web archive.
- * Implements regions H1 through H5 of the Application Interface specification:
- * - H1: Hero section with background video.
- * - H2: Map navigation, smooth-scroll "Learn more" button, name search box, and video pause button.
- * - H3: Community history section with a photo carousel and captions underneath each photo.
- * - H4: Two-sided historical and project timeline.
- * - H5: Footer with privacy/contact links and credits to community, collaborators, and funders.
+ * Implements regions H1 through H5 of the Application Interface specification
+ * and Wireframes 1.1 (Landing Page) and 2.1 (Search on the Landing Page):
+ * - H1: Hero section with title, one-sentence introduction, and background video.
+ * - H2: Map navigation, smooth-scroll "Learn more" button, live typeahead name search
+ *       (showing matches after 2 letters with arrow-key navigation), and video pause button.
+ * - H3: "The colonies and their cemetery" photo carousel with slide title, caption,
+ *       arrows, and position dots.
+ * - H4: "From the colonies to the archive" two-sided timeline with scroll fade-in cards.
+ * - H5: Footer with Privacy and Contact us links and credits to community, collaborators, and funders.
  */
 
-import { useState, useRef } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Container, Row, Col, Button, Form, Carousel } from 'react-bootstrap';
 
 /**
- * Placeholder slides for the H3 community history carousel.
- * Replace image URLs with final Cloudinary public IDs once uploaded by media.py.
+ * Fallback sample records used by the H2 typeahead search when the Flask API
+ * (/api/search) is offline during local frontend development.
  */
-const HISTORY_SLIDES = [
+const SAMPLE_RECORDS = [
   {
-    id: 'colony-origins',
-    imageUrl: 'https://placehold.co/800x520/3b4a47/f4f1ea?text=Entre+Rios+Colony+Archive',
-    altText: 'Historical photograph of the Jewish agricultural colony in Entre Ríos',
-    caption: 'Settlers of the Jewish agricultural colonies in Entre Ríos, Argentina.'
+    id: 'B-14',
+    fullName: 'Gluzman, Mari',
+    hebrewName: 'מירל גלוזמאן',
+    location: 'Row B · Pos. 14'
   },
   {
-    id: 'cemetery-grounds',
-    imageUrl: 'https://placehold.co/800x520/4a5854/f4f1ea?text=Cemetery+Grounds',
-    altText: 'View of the cemetery grounds and gravestones',
-    caption: 'The historic cemetery preserving inscriptions in both Spanish and Hebrew.'
+    id: 'B-15',
+    fullName: 'Gluzman, Abraham',
+    hebrewName: 'אברהם גלוזמאן',
+    location: 'Row B · Pos. 15'
   },
   {
-    id: 'fieldwork-team',
-    imageUrl: 'https://placehold.co/800x520/2f3e3b/f4f1ea?text=Fieldwork+Documentation',
-    altText: 'Fieldwork documentation of gravestones',
-    caption: 'Photographic survey documenting 1,047 gravestones across the cemetery.'
+    id: 'D-3',
+    fullName: 'Glusman, Rebeca',
+    hebrewName: 'רבקה גלוסמאן',
+    location: 'Row D · Pos. 3'
   }
 ];
 
 /**
- * Milestone entries for the H4 two-sided timeline.
+ * Slides for the H3 "The colonies and their cemetery" carousel.
+ */
+const HISTORY_SLIDES = [
+  {
+    id: 'colony-life',
+    imageUrl: 'https://placehold.co/960x480/3b4a47/f4f1ea?text=Life+in+the+Entre+Rios+Colonies',
+    altText: 'Historical photograph of life in the Entre Ríos colonies',
+    title: 'Life in the Entre Ríos colonies',
+    caption: 'Jewish immigrant families settled agricultural colonies across Entre Ríos, building synagogues, schools, and communal institutions.'
+  },
+  {
+    id: 'cemetery-grounds',
+    imageUrl: 'https://placehold.co/960x480/4a5854/f4f1ea?text=The+Community+Cemetery',
+    altText: 'View of the cemetery grounds and gravestones',
+    title: 'The community cemetery',
+    caption: 'The cemetery preserves generations of inscriptions in Spanish and Hebrew across 1,047 gravestones.'
+  },
+  {
+    id: 'fieldwork-survey',
+    imageUrl: 'https://placehold.co/960x480/2f3e3b/f4f1ea?text=Fieldwork+and+Preservation',
+    altText: 'Fieldwork documentation of gravestones',
+    title: 'Fieldwork and documentation',
+    caption: 'Every gravestone was photographed and transcribed in partnership with the Effron Center and PIIRS.'
+  }
+];
+
+/**
+ * Six milestone cards for the H4 "From the colonies to the archive" two-sided timeline.
  */
 const TIMELINE_EVENTS = [
-  {
-    year: '1889',
-    title: 'Founding of the Agricultural Colonies',
-    description: 'Jewish immigrants fleeing Eastern Europe establish agricultural settlements across Entre Ríos, Argentina, becoming known as the Gauchos Judíos.'
-  },
-  {
-    year: 'Early 1900s',
-    title: 'Establishment of the Community Cemetery',
-    description: 'The colony consecrates its cemetery, recording family lineages, epitaphs, and dates across generations in Hebrew and Spanish.'
-  },
-  {
-    year: 'Field Survey',
-    title: 'Photographic Preservation with Effron Center & PIIRS',
-    description: 'Researchers and students capture roughly 4,000 field photographs covering all 1,047 gravestones alongside aerial drone imagery.'
-  },
-  {
-    year: '2026',
-    title: 'Public Digital Archive Launch',
-    description: 'Inscriptions are transcribed and indexed with cross-script name search so descendants worldwide can locate relatives on the interactive map.'
-  }
+  { id: 't1', dateLabel: '1890s', title: 'The first colonies' },
+  { id: 't2', dateLabel: '[year]', title: 'The cemetery is founded' },
+  { id: 't3', dateLabel: '[years]', title: 'Life in the colonies' },
+  { id: 't4', dateLabel: '[years]', title: 'Families move to the cities' },
+  { id: 't5', dateLabel: '[year]', title: 'Fieldwork: every stone photographed' },
+  { id: 't6', dateLabel: '2026', title: 'The archive goes online' }
 ];
 
 /**
@@ -70,19 +86,122 @@ const TIMELINE_EVENTS = [
  */
 function LandingPage() {
   const [searchQuery, setSearchQuery] = useState('');
+  const [suggestions, setSuggestions] = useState([]);
+  const [activeIndex, setActiveIndex] = useState(0);
   const [isVideoPlaying, setIsVideoPlaying] = useState(true);
   const videoRef = useRef(null);
+  const timelineRefs = useRef([]);
   const navigate = useNavigate();
 
+  const trimmedQuery = searchQuery.trim();
+  const showDropdown = trimmedQuery.length >= 2;
+
   /**
-   * Handles submission of the H2 name search form.
-   * Redirects the visitor to the cemetery explorer with the query in the URL.
+   * Updates typeahead suggestions when the visitor types 2 or more letters.
+   * Queries /api/search first and falls back to local sample records if offline.
+   */
+  useEffect(() => {
+    if (trimmedQuery.length < 2) {
+      setSuggestions([]);
+      setActiveIndex(0);
+      return undefined;
+    }
+
+    let isCancelled = false;
+    const lowered = trimmedQuery.toLowerCase();
+
+    fetch(`/api/search?q=${encodeURIComponent(trimmedQuery)}`)
+      .then((response) => {
+        if (!response.ok) {
+          throw new Error('Search API unavailable');
+        }
+        return response.json();
+      })
+      .then((data) => {
+        if (!isCancelled && Array.isArray(data)) {
+          setSuggestions(data);
+          setActiveIndex(0);
+        }
+      })
+      .catch(() => {
+        if (!isCancelled) {
+          const filtered = SAMPLE_RECORDS.filter(
+            (item) =>
+              item.fullName.toLowerCase().includes(lowered) ||
+              item.hebrewName.includes(trimmedQuery)
+          );
+          setSuggestions(filtered);
+          setActiveIndex(0);
+        }
+      });
+
+    return () => {
+      isCancelled = true;
+    };
+  }, [trimmedQuery]);
+
+  /**
+   * Observes timeline cards and fades each card in as the visitor scrolls.
+   */
+  useEffect(() => {
+    if (typeof IntersectionObserver === 'undefined') {
+      timelineRefs.current.forEach((node) => {
+        if (node) {
+          node.classList.add('is-visible');
+        }
+      });
+      return undefined;
+    }
+
+    const observer = new IntersectionObserver(
+      (entries) => {
+        entries.forEach((entry) => {
+          if (entry.isIntersecting) {
+            entry.target.classList.add('is-visible');
+          }
+        });
+      },
+      { threshold: 0.15 }
+    );
+
+    timelineRefs.current.forEach((node) => {
+      if (node) {
+        observer.observe(node);
+      }
+    });
+
+    return () => observer.disconnect();
+  }, []);
+
+  /**
+   * Handles keyboard navigation (ArrowDown, ArrowUp, Enter) inside the H2 search box.
+   *
+   * @param {React.KeyboardEvent<HTMLInputElement>} event - The keyboard event.
+   */
+  function handleSearchKeyDown(event) {
+    if (!showDropdown || suggestions.length === 0) {
+      return;
+    }
+
+    if (event.key === 'ArrowDown') {
+      event.preventDefault();
+      setActiveIndex((prev) => (prev + 1) % suggestions.length);
+    } else if (event.key === 'ArrowUp') {
+      event.preventDefault();
+      setActiveIndex((prev) => (prev - 1 + suggestions.length) % suggestions.length);
+    } else if (event.key === 'Enter' && suggestions[activeIndex]) {
+      event.preventDefault();
+      navigate(`/record/${suggestions[activeIndex].id}`);
+    }
+  }
+
+  /**
+   * Handles form submission when the user presses Enter without selecting a specific row.
    *
    * @param {React.FormEvent<HTMLFormElement>} event - The form submission event.
    */
   function handleSearchSubmit(event) {
     event.preventDefault();
-    const trimmedQuery = searchQuery.trim();
     if (trimmedQuery.length > 0) {
       navigate(`/explore?q=${encodeURIComponent(trimmedQuery)}`);
     } else {
@@ -140,12 +259,11 @@ function LandingPage() {
             <Col lg={8} md={10}>
               <h1 className="display-4 fw-bold mb-3">Gauchos Judíos</h1>
               <p className="lead mb-4">
-                A public digital archive of the Jewish agricultural-colony cemetery in
-                Entre Ríos, Argentina, preserving 1,047 gravestones through complete
-                photographic coverage and cross-language name search.
+                Every gravestone in the Jewish colony cemetery of Entre Ríos, Argentina,
+                photographed and transcribed: 1,047 stones, about 4,000 photographs.
               </p>
 
-              {/* H2: Action Buttons */}
+              {/* H2: Main Actions */}
               <div className="d-flex flex-wrap gap-3 mb-4">
                 <Button
                   variant="success"
@@ -164,21 +282,81 @@ function LandingPage() {
                 </Button>
               </div>
 
-              {/* H2: Name Search Box */}
-              <Form onSubmit={handleSearchSubmit} role="search">
-                <Form.Group controlId="heroNameSearch">
-                  <Form.Label className="visually-hidden">
-                    Search for a person by name
-                  </Form.Label>
-                  <Form.Control
-                    type="search"
-                    className="hero-search-input"
-                    placeholder="Search a name (Spanish or Hebrew)..."
-                    value={searchQuery}
-                    onChange={(event) => setSearchQuery(event.target.value)}
-                  />
-                </Form.Group>
-              </Form>
+              {/* H2: Live Name Search Box with Suggestions Dropdown */}
+              <div className="hero-search-wrapper">
+                <Form onSubmit={handleSearchSubmit} role="search" autoComplete="off">
+                  <Form.Group controlId="heroNameSearch">
+                    <Form.Label className="visually-hidden">
+                      Search for a name
+                    </Form.Label>
+                    <Form.Control
+                      type="search"
+                      className="hero-search-input"
+                      placeholder="Search for a name..."
+                      value={searchQuery}
+                      onChange={(event) => setSearchQuery(event.target.value)}
+                      onKeyDown={handleSearchKeyDown}
+                    />
+                  </Form.Group>
+                </Form>
+
+                {showDropdown && (
+                  <div className="search-dropdown" role="listbox" aria-label="Name suggestions">
+                    {suggestions.length > 0 ? (
+                      <>
+                        {suggestions.slice(0, 3).map((person, index) => (
+                          <div
+                            key={person.id}
+                            role="option"
+                            aria-selected={index === activeIndex}
+                            className={`search-suggestion-item ${index === activeIndex ? 'active' : ''}`}
+                            onMouseEnter={() => setActiveIndex(index)}
+                            onClick={() => navigate(`/record/${person.id}`)}
+                          >
+                            <div className="d-flex align-items-center">
+                              <div className="search-thumb-placeholder" aria-hidden="true" />
+                              <div>
+                                <div className="fw-bold">{person.fullName}</div>
+                                <div className="text-muted small">{person.location}</div>
+                              </div>
+                            </div>
+                            <div dir="rtl" className="text-secondary">
+                              {person.hebrewName}
+                            </div>
+                          </div>
+                        ))}
+                        <div
+                          className="search-dropdown-footer"
+                          onClick={() =>
+                            navigate(`/explore?q=${encodeURIComponent(trimmedQuery)}`)
+                          }
+                        >
+                          <span>
+                            See all {suggestions.length} results on the map
+                          </span>
+                          <span aria-hidden="true">&rarr;</span>
+                        </div>
+                      </>
+                    ) : (
+                      <div className="search-no-results">
+                        <div className="fw-bold mb-1">
+                          No names match &ldquo;{trimmedQuery}&rdquo;
+                        </div>
+                        <p className="text-muted small mb-2">
+                          Check the spelling or try the name in Hebrew. Many stones are
+                          only partly readable, so you can also look for them on the map.
+                        </p>
+                        <div
+                          className="search-dropdown-footer px-0 pb-0 bg-transparent"
+                          onClick={() => navigate('/explore')}
+                        >
+                          <span>Explore the cemetery map &rarr;</span>
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                )}
+              </div>
             </Col>
           </Row>
         </Container>
@@ -204,69 +382,63 @@ function LandingPage() {
         </button>
       </section>
 
-      {/* H3: Community History & Photo Carousel */}
-      <section id="community-history" className="history-section" aria-label="Community History">
+      {/* H3: The Colonies and Their Cemetery (Photo Carousel) */}
+      <section id="community-history" className="history-section" aria-label="The colonies and their cemetery">
         <Container>
-          <Row className="align-items-center g-5">
-            <Col lg={6}>
-              <Carousel interval={null} indicators={false}>
+          <Row className="justify-content-center">
+            <Col lg={9}>
+              <h2 className="fw-bold mb-4">The colonies and their cemetery</h2>
+              <Carousel interval={null} indicators={true} className="archive-carousel shadow-sm">
                 {HISTORY_SLIDES.map((slide) => (
                   <Carousel.Item key={slide.id}>
                     <img
-                      className="d-block w-100 rounded-top"
+                      className="d-block w-100"
                       src={slide.imageUrl}
                       alt={slide.altText}
                     />
                     <div className="carousel-caption-below">
-                      {slide.caption}
+                      <div className="fw-bold mb-1">{slide.title}</div>
+                      <div className="text-muted small">{slide.caption}</div>
                     </div>
                   </Carousel.Item>
                 ))}
               </Carousel>
-            </Col>
-
-            <Col lg={6}>
-              <h2 className="fw-bold mb-3">The Community and the Fieldwork</h2>
-              <p>
-                In the late nineteenth century, Jewish families fleeing persecution in the
-                Russian Empire settled in the agricultural colonies of Entre Ríos, Argentina.
-                Known as the <em>Gauchos Judíos</em>, these pioneers built vibrant rural
-                institutions, synagogues, libraries, and communal cemeteries that bridged
-                Eastern European Jewish traditions and Argentine life.
-              </p>
-              <p className="mb-0">
-                Built in partnership with the Effron Center for the Study of America and the
-                Princeton Institute for International and Regional Studies (PIIRS), this archive
-                combines approximately 4,000 field photographs with an interactive aerial map so
-                visitors and descendants can locate relatives even where Spanish and Hebrew
-                spellings diverge.
-              </p>
             </Col>
           </Row>
         </Container>
       </section>
 
       {/* H4: Two-Sided Timeline */}
-      <section className="timeline-section" aria-label="Historical Timeline">
+      <section className="timeline-section" aria-label="From the colonies to the archive">
         <Container>
-          <h2 className="text-center fw-bold mb-5">History &amp; Archive Timeline</h2>
-          <div className="timeline-wrapper">
-            {TIMELINE_EVENTS.map((item, index) => {
-              const isLeft = index % 2 === 0;
-              return (
-                <Row key={item.year} className="mb-3 align-items-center">
-                  <Col md={6} className={isLeft ? 'pe-md-5' : 'order-md-2 ps-md-5'}>
-                    <div className="timeline-card shadow-sm">
-                      <div className="fw-bold text-secondary small mb-1">{item.year}</div>
-                      <h3 className="h5 fw-bold mb-2">{item.title}</h3>
-                      <p className="mb-0">{item.description}</p>
-                    </div>
-                  </Col>
-                  <Col md={6} className={isLeft ? 'order-md-2' : 'order-md-1'} />
-                </Row>
-              );
-            })}
-          </div>
+          <Row className="justify-content-center">
+            <Col lg={9}>
+              <h2 className="fw-bold mb-4">From the colonies to the archive</h2>
+              <div className="timeline-wrapper">
+                {TIMELINE_EVENTS.map((item, index) => {
+                  const isLeft = index % 2 === 0;
+                  return (
+                    <Row key={item.id} className="mb-3 align-items-center">
+                      <Col md={6} className={isLeft ? 'pe-md-4' : 'order-md-2 ps-md-4'}>
+                        <div
+                          ref={(el) => {
+                            timelineRefs.current[index] = el;
+                          }}
+                          className="timeline-card shadow-sm"
+                        >
+                          <div className="fw-bold text-secondary small mb-1">
+                            {item.dateLabel}
+                          </div>
+                          <div className="fw-bold">{item.title}</div>
+                        </div>
+                      </Col>
+                      <Col md={6} className={isLeft ? 'order-md-2' : 'order-md-1'} />
+                    </Row>
+                  );
+                })}
+              </div>
+            </Col>
+          </Row>
         </Container>
       </section>
 
@@ -274,20 +446,12 @@ function LandingPage() {
       <footer className="archive-footer">
         <Container>
           <div className="mb-2">
-            <a href="#cite">Cite</a>
-            <span className="mx-2">&middot;</span>
-            <a href="mailto:gauchosjudios@princeton.edu">Contact</a>
-            <span className="mx-2">&middot;</span>
-            <a href="mailto:gauchosjudios@princeton.edu?subject=Archive%20Correction">
-              Corrections
-            </a>
-            <span className="mx-2">&middot;</span>
             <a href="#privacy">Privacy</a>
+            <span className="mx-2">&middot;</span>
+            <a href="mailto:gauchosjudios@princeton.edu">Contact us</a>
           </div>
           <div className="small">
-            Credits: Jewish community of Entre Ríos, project collaborators, the Effron Center
-            for the Study of America, and the Princeton Institute for International and
-            Regional Studies (PIIRS).
+            Credits: community, collaborators, funders
           </div>
         </Container>
       </footer>
