@@ -1,447 +1,242 @@
-/**
- * Landing page component for the Gauchos Judíos web archive.
- * Implements regions H1 through H5 of the Application Interface specification
- * and Wireframes 1.1 (Landing Page) and 2.1 (Search on the Landing Page):
- * - H1: Hero section with title, one-sentence introduction, and background video.
- * - H2: Map navigation, smooth-scroll "Learn more" button, live typeahead name search
- *       (showing matches after 2 letters with arrow-key navigation), and video pause button.
- * - H3: "The colonies and their cemetery" photo carousel with slide title, caption,
- *       arrows, and position dots.
- * - H4: "From the colonies to the archive" two-sided timeline with scroll fade-in cards.
- * - H5: Footer with Privacy and Contact us links and credits to community, collaborators, and funders.
- */
-
 import { useState, useRef, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Container, Row, Col, Button, Form, Carousel } from 'react-bootstrap';
 
-/**
- * Fallback sample records used by the H2 typeahead search when the Flask API
- * (/api/search) is offline during local frontend development.
- */
-const SAMPLE_RECORDS = [
-  {
-    id: 'B-14',
-    fullName: 'Gluzman, Mari',
-    hebrewName: 'מירל גלוזמאן',
-    location: 'Row B · Pos. 14'
-  },
-  {
-    id: 'B-15',
-    fullName: 'Gluzman, Abraham',
-    hebrewName: 'אברהם גלוזמאן',
-    location: 'Row B · Pos. 15'
-  },
-  {
-    id: 'D-3',
-    fullName: 'Glusman, Rebeca',
-    hebrewName: 'רבקה גלוסמאן',
-    location: 'Row D · Pos. 3'
-  }
-];
+// Import local assets for the carousel
+import img1 from './assets/carousel_01_entrance.jpg';
+import img2 from './assets/carousel_02_aerial.jpg';
+import img3 from './assets/carousel_03_stones.jpg';
+import img4 from './assets/carousel_04_cleaning.jpg';
+import img5 from './assets/carousel_05_row_by_row.jpg';
+import img6 from './assets/carousel_06_interview.jpg';
+import img7 from './assets/carousel_07_station.jpg';
+import img8 from './assets/carousel_08_team.jpg';
 
-/**
- * Slides for the H3 "The colonies and their cemetery" carousel.
- */
 const HISTORY_SLIDES = [
-  {
-    id: 'colony-life',
-    imageUrl: 'https://placehold.co/960x480/3b4a47/f4f1ea?text=Life+in+the+Entre+Rios+Colonies',
-    altText: 'Historical photograph of life in the Entre Ríos colonies',
-    title: 'Life in the Entre Ríos colonies',
-    caption: 'Jewish immigrant families settled agricultural colonies across Entre Ríos, building synagogues, schools, and communal institutions.'
-  },
-  {
-    id: 'cemetery-grounds',
-    imageUrl: 'https://placehold.co/960x480/4a5854/f4f1ea?text=The+Community+Cemetery',
-    altText: 'View of the cemetery grounds and gravestones',
-    title: 'The community cemetery',
-    caption: 'The cemetery preserves generations of inscriptions in Spanish and Hebrew across 1,047 gravestones.'
-  },
-  {
-    id: 'fieldwork-survey',
-    imageUrl: 'https://placehold.co/960x480/2f3e3b/f4f1ea?text=Fieldwork+and+Preservation',
-    altText: 'Fieldwork documentation of gravestones',
-    title: 'Fieldwork and documentation',
-    caption: 'Every gravestone was photographed and transcribed in partnership with the Effron Center and PIIRS.'
-  }
+  { id: '1', img: img1, title: 'Arriving at the cemetery', caption: 'The team at the entrance building, whose sign reads "Cementerio Israelita fundado en 1895."' },
+  { id: '2', img: img2, title: 'The cemetery from above', caption: 'A brick wall encloses about 2,500 headstones in the open farmland outside Basavilbaso.' },
+  { id: '3', img: img3, title: 'Faces and stars', caption: 'Many stones carry a Star of David and an enamel portrait of the person buried there.' },
+  { id: '4', img: img4, title: 'Cleaning the stones', caption: 'Before photographing, the team scrubbed away lichen and dirt so every inscription could be read.' },
+  { id: '5', img: img5, title: 'Row by row', caption: 'Cleaning a stone in the children\'s section. Small pebbles on a nearby grave mark a visitor\'s remembrance.' },
+  { id: '6', img: img6, title: 'Sharing the story', caption: 'Uriel Lin, team leader, speaks with FM Riel about the project.' },
+  { id: '7', img: img7, title: 'The town the colony grew around', caption: 'The team at Basavilbaso\'s railway station. Colonia Lucienville was settled around it in 1894.' },
+  { id: '8', img: img8, title: 'The team', caption: 'Princeton students with local caretakers and community members who made the work possible.' }
 ];
 
-/**
- * Six milestone cards for the H4 "From the colonies to the archive" two-sided timeline.
- */
 const TIMELINE_EVENTS = [
-  { id: 't1', dateLabel: '1890s', title: 'The first colonies' },
-  { id: 't2', dateLabel: '[year]', title: 'The cemetery is founded' },
-  { id: 't3', dateLabel: '[years]', title: 'Life in the colonies' },
-  { id: 't4', dateLabel: '[years]', title: 'Families move to the cities' },
-  { id: 't5', dateLabel: '[year]', title: 'Fieldwork: every stone photographed' },
-  { id: 't6', dateLabel: '2026', title: 'The archive goes online' }
+  { era: 'colonies', date: '1880s-1900s', title: 'Pogroms in the Russian Empire', desc: 'Violence and new restrictions push Jewish families to look for a life elsewhere.' },
+  { era: 'colonies', date: '1887', title: 'The railway reaches Basavilbaso', desc: 'A new station on the Entre Ríos line, around which the colony will grow.' },
+  { era: 'colonies', date: '1891', title: 'The Jewish Colonization Association is founded', desc: 'Baron Maurice de Hirsch, mourning his son Lucien, founds it to resettle Jews as farmers in Argentina.' },
+  { era: 'colonies', date: '1894', title: 'Colonia Lucienville is founded', desc: 'Families from Kherson and Bessarabia arrive at Basavilbaso.' },
+  { era: 'colonies', date: '1895', title: 'The cemetery is founded', desc: 'Cementerio Israelita, Colonia N.º 1, also known as Novibuco.' },
+  { era: 'colonies', date: '1900', title: 'Argentina\'s first agricultural cooperative', desc: 'The colonists found it on August 12 in Basavilbaso.' },
+  { era: 'project', date: 'January 2026', title: 'Fieldwork', desc: 'A Princeton team photographs 794 graves in the women\'s and children\'s sections.' },
+  { era: 'project', date: 'March 2026 - December 2026', title: 'Building the archive', desc: 'The records are processed and the website is developed.' },
+  { era: 'project', date: 'December 2026', title: 'The archive goes online', desc: 'Anyone can search for a name and find the grave on the map.' },
+  { era: 'future', date: 'Next', title: 'The men\'s section', desc: 'A future trip will document the rest of the cemetery.' }
 ];
 
-/**
- * Renders the public landing page (regions H1–H5).
- *
- * @returns {JSX.Element} The rendered landing page component.
- */
 function LandingPage() {
   const [searchQuery, setSearchQuery] = useState('');
-  const [suggestions, setSuggestions] = useState([]);
-  const [activeIndex, setActiveIndex] = useState(0);
   const [isVideoPlaying, setIsVideoPlaying] = useState(true);
+  const [carouselIndex, setCarouselIndex] = useState(0);
+  
   const videoRef = useRef(null);
-  const timelineRefs = useRef([]);
+  const observerRefs = useRef([]);
   const navigate = useNavigate();
 
-  const trimmedQuery = searchQuery.trim();
-  const showDropdown = trimmedQuery.length >= 2;
-
-  /**
-   * Updates the search input value and clears suggestions immediately when fewer than 2 letters.
-   *
-   * @param {React.ChangeEvent<HTMLInputElement>} event - The input change event.
-   */
-  function handleSearchChange(event) {
-    const nextValue = event.target.value;
-    setSearchQuery(nextValue);
-    if (nextValue.trim().length < 2) {
-      setSuggestions([]);
-      setActiveIndex(0);
-    }
-  }
-
-  /**
-   * Fetches typeahead suggestions when the visitor types 2 or more letters.
-   * Queries /api/search first and falls back to local sample records if offline.
-   */
-  useEffect(() => {
-    if (trimmedQuery.length < 2) {
-      return undefined;
-    }
-
-    let isCancelled = false;
-    const lowered = trimmedQuery.toLowerCase();
-
-    fetch(`/api/search?q=${encodeURIComponent(trimmedQuery)}`)
-      .then((response) => {
-        if (!response.ok) {
-          throw new Error('Search API unavailable');
-        }
-        return response.json();
-      })
-      .then((data) => {
-        if (!isCancelled && Array.isArray(data)) {
-          setSuggestions(data);
-          setActiveIndex(0);
-        }
-      })
-      .catch(() => {
-        if (!isCancelled) {
-          const filtered = SAMPLE_RECORDS.filter(
-            (item) =>
-              item.fullName.toLowerCase().includes(lowered) ||
-              item.hebrewName.includes(trimmedQuery)
-          );
-          setSuggestions(filtered);
-          setActiveIndex(0);
-        }
-      });
-
-    return () => {
-      isCancelled = true;
-    };
-  }, [trimmedQuery]);
-
-  /**
-   * Observes timeline cards and fades each card in as the visitor scrolls.
-   */
-  useEffect(() => {
-    if (typeof IntersectionObserver === 'undefined') {
-      timelineRefs.current.forEach((node) => {
-        if (node) {
-          node.classList.add('is-visible');
-        }
-      });
-      return undefined;
-    }
-
-    const observer = new IntersectionObserver(
-      (entries) => {
-        entries.forEach((entry) => {
-          if (entry.isIntersecting) {
-            entry.target.classList.add('is-visible');
-          }
-        });
-      },
-      { threshold: 0.15 }
-    );
-
-    timelineRefs.current.forEach((node) => {
-      if (node) {
-        observer.observe(node);
-      }
-    });
-
-    return () => observer.disconnect();
-  }, []);
-
-  /**
-   * Handles keyboard navigation (ArrowDown, ArrowUp, Enter) inside the H2 search box.
-   *
-   * @param {React.KeyboardEvent<HTMLInputElement>} event - The keyboard event.
-   */
-  function handleSearchKeyDown(event) {
-    if (!showDropdown || suggestions.length === 0) {
-      return;
-    }
-
-    if (event.key === 'ArrowDown') {
-      event.preventDefault();
-      setActiveIndex((prev) => (prev + 1) % suggestions.length);
-    } else if (event.key === 'ArrowUp') {
-      event.preventDefault();
-      setActiveIndex((prev) => (prev - 1 + suggestions.length) % suggestions.length);
-    } else if (event.key === 'Enter' && suggestions[activeIndex]) {
-      event.preventDefault();
-      navigate(`/record/${suggestions[activeIndex].id}`);
-    }
-  }
-
-  /**
-   * Handles form submission when the user presses Enter without selecting a specific row.
-   *
-   * @param {React.FormEvent<HTMLFormElement>} event - The form submission event.
-   */
   function handleSearchSubmit(event) {
     event.preventDefault();
-    if (trimmedQuery.length > 0) {
-      navigate(`/explore?q=${encodeURIComponent(trimmedQuery)}`);
+    const query = searchQuery.trim();
+    if (query.length > 0) {
+      navigate(`/explore?q=${encodeURIComponent(query)}`);
     } else {
       navigate('/explore');
     }
   }
 
-  /**
-   * Toggles playback of the H1 background hero video and updates button state.
-   */
   function handleToggleVideo() {
-    const videoElement = videoRef.current;
-    if (!videoElement) {
-      setIsVideoPlaying((prev) => !prev);
-      return;
-    }
-
-    if (videoElement.paused) {
-      videoElement.play();
-      setIsVideoPlaying(true);
-    } else {
-      videoElement.pause();
-      setIsVideoPlaying(false);
+    if (videoRef.current) {
+      if (videoRef.current.paused) {
+        videoRef.current.play();
+        setIsVideoPlaying(true);
+      } else {
+        videoRef.current.pause();
+        setIsVideoPlaying(false);
+      }
     }
   }
 
-  /**
-   * Smoothly scrolls the viewport down to the H3 history section.
-   */
-  function handleLearnMoreClick() {
-    const historyElement = document.getElementById('community-history');
-    if (historyElement) {
-      historyElement.scrollIntoView({ behavior: 'smooth' });
-    }
-  }
+  useEffect(() => {
+    const observer = new IntersectionObserver((entries) => {
+      entries.forEach(entry => {
+        if (entry.isIntersecting) entry.target.classList.add('is-visible');
+      });
+    }, { threshold: 0.15 });
+
+    observerRefs.current.forEach(node => {
+      if (node) observer.observe(node);
+    });
+    return () => observer.disconnect();
+  }, []);
 
   return (
     <main>
-      {/* H1 & H2: Hero Section */}
-      <section className="hero-section" aria-label="Introduction">
-        <video
-          ref={videoRef}
-          className="hero-video"
-          autoPlay
-          loop
-          muted
-          playsInline
-          poster="https://placehold.co/1920x1080/263331/263331"
-        >
-          {/* Cloudinary hero drone video source goes here */}
+      <section className="hero-section">
+        <div className="hero-wordmark">Los Gauchos Judíos</div>
+        <video ref={videoRef} className="hero-video" autoPlay loop muted playsInline>
+          <source src="/video_header_3.mp4" type="video/mp4" />
         </video>
-
+        <div className="hero-overlay"></div>
+        
         <Container className="hero-content">
           <Row>
-            <Col lg={8} md={10}>
-              <h1 className="display-4 fw-bold mb-3">Gauchos Judíos</h1>
-              <p className="lead mb-4">
-                Every gravestone in the Jewish colony cemetery of Entre Ríos, Argentina,
-                photographed and transcribed: 1,047 stones, about 4,000 photographs.
+            <Col lg={9}>
+              <div className="hero-eyebrow">Cementerio Judío de Novibuco &middot; Colonia Lucienville, Entre Ríos, Argentina</div>
+              <h1 className="hero-title">Cementerio Israelita</h1>
+              <h2 className="hero-subtitle-line">Basavilbaso Colonia N.º 1</h2>
+              <p className="lead mb-4" style={{ maxWidth: '800px', fontSize: '1.25rem' }}>
+                Resting place of the Jewish families who farmed Colonia Lucienville from 1894. 
+                794 of its graves are now photographed and searchable by name.
               </p>
 
-              {/* H2: Main Actions */}
               <div className="d-flex flex-wrap gap-3 mb-4">
-                <Button
-                  variant="success"
-                  size="lg"
-                  style={{ backgroundColor: '#1f5c4b', borderColor: '#1f5c4b' }}
-                  onClick={() => navigate('/explore')}
-                >
+                <Button variant="success" size="lg" style={{ backgroundColor: '#3e5a4d', borderColor: '#3e5a4d' }} onClick={() => navigate('/explore')}>
                   Explore the cemetery map
                 </Button>
-                <Button
-                  variant="outline-light"
-                  size="lg"
-                  onClick={handleLearnMoreClick}
-                >
+                <Button variant="outline-light" size="lg" onClick={() => document.getElementById('info-section').scrollIntoView({ behavior: 'smooth' })}>
                   Learn more
                 </Button>
               </div>
 
-              {/* H2: Live Name Search Box with Suggestions Dropdown */}
               <div className="hero-search-wrapper">
-                <Form onSubmit={handleSearchSubmit} role="search" autoComplete="off">
-                  <Form.Group controlId="heroNameSearch">
-                    <Form.Label className="visually-hidden">
-                      Search for a name
-                    </Form.Label>
-                    <Form.Control
-                      type="search"
-                      className="hero-search-input"
-                      placeholder="Search for a name..."
-                      value={searchQuery}
-                      onChange={handleSearchChange}
-                      onKeyDown={handleSearchKeyDown}
-                    />
-                  </Form.Group>
+                <Form onSubmit={handleSearchSubmit}>
+                  <Form.Control 
+                    type="search" 
+                    className="hero-search-input" 
+                    placeholder="Search for a name..." 
+                    value={searchQuery}
+                    onChange={(e) => setSearchQuery(e.target.value)} 
+                  />
                 </Form>
-
-                {showDropdown && (
-                  <div className="search-dropdown" role="listbox" aria-label="Name suggestions">
-                    {suggestions.length > 0 ? (
-                      <>
-                        {suggestions.slice(0, 3).map((person, index) => (
-                          <div
-                            key={person.id}
-                            role="option"
-                            aria-selected={index === activeIndex}
-                            className={`search-suggestion-item ${index === activeIndex ? 'active' : ''}`}
-                            onMouseEnter={() => setActiveIndex(index)}
-                            onClick={() => navigate(`/record/${person.id}`)}
-                          >
-                            <div className="d-flex align-items-center">
-                              <div className="search-thumb-placeholder" aria-hidden="true" />
-                              <div>
-                                <div className="fw-bold">{person.fullName}</div>
-                                <div className="text-muted small">{person.location}</div>
-                              </div>
-                            </div>
-                            <div dir="rtl" className="text-secondary">
-                              {person.hebrewName}
-                            </div>
-                          </div>
-                        ))}
-                        <div
-                          className="search-dropdown-footer"
-                          onClick={() =>
-                            navigate(`/explore?q=${encodeURIComponent(trimmedQuery)}`)
-                          }
-                        >
-                          <span>
-                            See all {suggestions.length} results on the map
-                          </span>
-                          <span aria-hidden="true">&rarr;</span>
-                        </div>
-                      </>
-                    ) : (
-                      <div className="search-no-results">
-                        <div className="fw-bold mb-1">
-                          No names match &ldquo;{trimmedQuery}&rdquo;
-                        </div>
-                        <p className="text-muted small mb-2">
-                          Check the spelling or try the name in Hebrew. Many stones are
-                          only partly readable, so you can also look for them on the map.
-                        </p>
-                        <div
-                          className="search-dropdown-footer px-0 pb-0 bg-transparent"
-                          onClick={() => navigate('/explore')}
-                        >
-                          <span>Explore the cemetery map &rarr;</span>
-                        </div>
-                      </div>
-                    )}
-                  </div>
-                )}
               </div>
             </Col>
           </Row>
         </Container>
 
-        {/* H2: Background Video Pause/Play Control */}
-        <button
-          type="button"
-          className="video-pause-btn"
-          onClick={handleToggleVideo}
-          aria-label={isVideoPlaying ? 'Pause background video' : 'Play background video'}
-          title={isVideoPlaying ? 'Pause background video' : 'Play background video'}
-        >
+        <button type="button" className="video-pause-btn" onClick={handleToggleVideo} aria-label={isVideoPlaying ? 'Pause' : 'Play'}>
           {isVideoPlaying ? (
-            <svg width="16" height="16" viewBox="0 0 16 16" fill="#6e5a36" aria-hidden="true">
-              <rect x="3" y="2" width="3.5" height="12" rx="1" />
-              <rect x="9.5" y="2" width="3.5" height="12" rx="1" />
-            </svg>
+            <svg width="16" height="16" fill="currentColor" viewBox="0 0 16 16"><path d="M5.5 3.5A1.5 1.5 0 0 1 7 5v6a1.5 1.5 0 0 1-3 0V5a1.5 1.5 0 0 1 1.5-1.5zm5 0A1.5 1.5 0 0 1 12 5v6a1.5 1.5 0 0 1-3 0V5a1.5 1.5 0 0 1 1.5-1.5z"/></svg>
           ) : (
-            <svg width="16" height="16" viewBox="0 0 16 16" fill="#6e5a36" aria-hidden="true">
-              <path d="M4 2.5v11l9-5.5-9-5.5z" />
-            </svg>
+            <svg width="16" height="16" fill="currentColor" viewBox="0 0 16 16"><path d="M10.804 8 5 4.633v6.734L10.804 8zm.792-.696a.802.802 0 0 1 0 1.392l-6.363 3.692C4.713 12.69 4 12.345 4 11.692V4.308c0-.653.713-.998 1.233-.696l6.363 3.692z"/></svg>
           )}
         </button>
       </section>
 
-      {/* H3: The Colonies and Their Cemetery (Photo Carousel) */}
-      <section id="community-history" className="history-section" aria-label="The colonies and their cemetery">
+      <section id="info-section" className="info-section bg-white">
         <Container>
           <Row className="justify-content-center">
-            <Col lg={9}>
-              <h2 className="fw-bold mb-4">The colonies and their cemetery</h2>
-              <Carousel interval={null} indicators={true} className="archive-carousel shadow-sm">
-                {HISTORY_SLIDES.map((slide) => (
-                  <Carousel.Item key={slide.id}>
-                    <img
-                      className="d-block w-100"
-                      src={slide.imageUrl}
-                      alt={slide.altText}
-                    />
-                    <div className="carousel-caption-below">
-                      <div className="fw-bold mb-1">{slide.title}</div>
-                      <div className="text-muted small">{slide.caption}</div>
-                    </div>
-                  </Carousel.Item>
-                ))}
-              </Carousel>
+            <Col lg={10}>
+              <div className="info-block" ref={el => observerRefs.current.push(el)}>
+                <Row>
+                  <Col md={4}><div className="info-date">1894</div><div className="info-heading">Jewish Farmers in the Pampas of Argentina</div></Col>
+                  <Col md={8}>
+                    <p className="info-body">
+                      In the late 19th century, a wave of pogroms swept the Russian Empire, targeting the Jewish population that had lived there for centuries. Baron Maurice de Hirsch, a Jewish-German philanthropist, sought to help persecuted Jews by resettling them as farmers in Argentina's vast countryside. He founded the Jewish Colonization Association in 1891, which set out to buy land and establish agricultural colonies for the Eastern European Jews.
+                    </p>
+                    <p className="info-body">
+                      Colonia Lucienville, named after the Baron's only son who predeceased his parents, was founded in 1894, near the railway station of Basavilbaso, Entre Ríos. The first families came from Kherson and Bessarabia in today's southern regions of Ukraine and Moldova. They raised cattle and grew crops, founded Jewish communal institutions, and even established the first agricultural cooperative in Argentina. Alberto Gerchunoff, a prominent Argentine writer who grew up in the Jewish colonies, coined the term "los Gauchos Judíos", or "the Jewish Cowboys", to describe the Eastern European Jews who had adapted to the harsh agricultural conditions of the Argentine plains. Over the 20th century, most of the community's descendants have moved away from the colonies, and scattered throughout Argentina and the rest of the world.
+                    </p>
+                  </Col>
+                </Row>
+              </div>
+
+              <div className="info-block" ref={el => observerRefs.current.push(el)}>
+                <Row>
+                  <Col md={4}><div className="info-date">1895</div><div className="info-heading">Cementerio Israelita, Colonia N.º 1</div></Col>
+                  <Col md={8}>
+                    <p className="info-body">
+                      One of the first institutions the community established was the Jewish cemetery, founded in 1895, a year after the first families arrived. The cemetery and the community are also known as Novibuco, named after Novyi Buh, the Ukrainian town many of the first settlers came from. With approximately 2,500 headstones, this is the largest Jewish cemetery in Colonia Lucienville.
+                    </p>
+                    <p className="info-body">
+                      The cemetery consists of a men's section, a women's section, and a children's section. The newer parts of the cemetery mix somewhat, but the layout largely follows this traditional separation. The headstones are inscribed in Spanish, Hebrew and Yiddish, and include valuable records that shed light on a community in transition, from its Eastern European shtetl roots, to its modernization and secularization which followed. Today, the cemetery is cared for by the Jewish community of Basavilbaso (Asociación Israelita Basavilbaso).
+                    </p>
+                  </Col>
+                </Row>
+              </div>
+
+              <div className="info-block" ref={el => observerRefs.current.push(el)}>
+                <Row>
+                  <Col md={4}><div className="info-date">2026</div><div className="info-heading">Los Gauchos Judíos</div></Col>
+                  <Col md={8}>
+                    <p className="info-body">
+                      In January 2026, a team of Princeton students traveled to Basavilbaso, with support from the Princeton Institute for International and Regional Studies (PIIRS), the Effron Center, and the Department of Spanish and Portuguese. In collaboration with local caretakers and stakeholders in the Jewish community of Argentina, they cleaned and photographed 794 graves, covering the women's and children's sections of the cemetery.
+                    </p>
+                    <p className="info-body">
+                      The photos were then sorted and transcribed using AI tools and checked by hand. A student team was formed to transform the records into a publicly accessible archive, where anyone can search for a name in Spanish or Hebrew, or explore the aerial map of the cemetery. The men's section will be documented and added to the archive in the future.
+                    </p>
+                    <a href="#sources" className="text-muted small mt-2 d-inline-block">Sources are listed at the bottom of the page</a>
+                  </Col>
+                </Row>
+              </div>
             </Col>
           </Row>
         </Container>
       </section>
 
-      {/* H4: Two-Sided Timeline */}
-      <section className="timeline-section" aria-label="From the colonies to the archive">
+      <section className="history-section">
+        <Container>
+          <div className="carousel-container">
+            <h3 className="fw-bold mb-4">From the fieldwork</h3>
+            <div className="archive-carousel shadow-sm">
+              <Carousel 
+                indicators={false} 
+                interval={null} 
+                onSelect={(idx) => setCarouselIndex(idx)}
+                nextIcon={<span aria-hidden="true" className="carousel-control-next-icon" style={{filter: 'invert(1)'}} />}
+                prevIcon={<span aria-hidden="true" className="carousel-control-prev-icon" style={{filter: 'invert(1)'}} />}
+              >
+                {HISTORY_SLIDES.map((slide, i) => (
+                  <Carousel.Item key={slide.id}>
+                    <img className="d-block w-100" src={slide.img} alt={slide.title} loading={i === 0 ? "eager" : "lazy"} />
+                    <div className="carousel-caption-below">
+                      <div className="fw-bold mb-1">{slide.title}</div>
+                      <div className="text-muted small mb-0">{slide.caption}</div>
+                    </div>
+                  </Carousel.Item>
+                ))}
+              </Carousel>
+            </div>
+            <div className="carousel-counter-row">
+              <div className="text-muted small">Photos: Los Gauchos Judíos team, January 2026</div>
+              <div className="fw-bold">{carouselIndex + 1} / {HISTORY_SLIDES.length}</div>
+            </div>
+          </div>
+        </Container>
+      </section>
+
+      <section className="timeline-section">
         <Container>
           <Row className="justify-content-center">
-            <Col lg={9}>
-              <h2 className="fw-bold mb-4">From the colonies to the archive</h2>
+            <Col lg={8}>
+              <h2 className="fw-bold text-center mb-5">From the colonies to the archive</h2>
               <div className="timeline-wrapper">
+                <div className="timeline-era-label era-colonies">The colonies</div>
+                <div className="timeline-era-label era-project">The project</div>
+                
                 {TIMELINE_EVENTS.map((item, index) => {
                   const isLeft = index % 2 === 0;
+                  const cardClass = `timeline-card shadow-sm ${item.era === 'project' ? 'project-card' : ''} ${item.era === 'future' ? 'future-card' : ''}`;
+                  
                   return (
-                    <Row key={item.id} className="mb-3 align-items-center">
-                      <Col md={6} className={isLeft ? 'pe-md-4' : 'order-md-2 ps-md-4'}>
-                        <div
-                          ref={(el) => {
-                            timelineRefs.current[index] = el;
-                          }}
-                          className="timeline-card shadow-sm"
-                        >
-                          <div className="fw-bold text-secondary small mb-1">
-                            {item.dateLabel}
-                          </div>
-                          <div className="fw-bold">{item.title}</div>
+                    <Row key={index} className="mb-4 align-items-center" ref={el => observerRefs.current.push(el)}>
+                      <Col md={6} className={isLeft ? 'pe-md-4 position-relative' : 'order-md-2 ps-md-4 position-relative'}>
+                        <div className={cardClass}>
+                          <div className="fw-bold mb-1" style={{color: item.era === 'project' ? '#3e5a4d' : '#2b2b2b'}}>{item.date}</div>
+                          <div className="fw-bold mb-1">{item.title}</div>
+                          <div className="text-muted small">{item.desc}</div>
+                          <div className={`timeline-dot ${isLeft ? 'dot-left' : 'dot-right'}`} 
+                               style={{backgroundColor: item.era === 'project' ? '#3e5a4d' : '#a39b8b', display: window.innerWidth > 768 ? 'block' : 'none'}}></div>
                         </div>
                       </Col>
                       <Col md={6} className={isLeft ? 'order-md-2' : 'order-md-1'} />
@@ -454,16 +249,45 @@ function LandingPage() {
         </Container>
       </section>
 
-      {/* H5: Footer */}
-      <footer className="archive-footer">
+      <footer id="sources" className="archive-footer">
         <Container>
-          <div className="mb-2">
-            <a href="#privacy">Privacy</a>
-            <span className="mx-2">&middot;</span>
-            <a href="mailto:gauchosjudios@princeton.edu">Contact us</a>
-          </div>
-          <div className="small">
-            Credits: community, collaborators, funders
+          <Row className="mb-5">
+            <Col lg={7} className="mb-4 mb-lg-0">
+              <h5 className="mb-3 text-white">Sources</h5>
+              <Row>
+                <Col sm={6}>
+                  <ul className="list-unstyled mb-0">
+                    <li className="mb-2"><a href="https://vaadhakehilot.amia.org.ar/kehilot/asociacion-israelita-basavilbaso/" target="_blank" rel="noreferrer">AMIA Vaad Hakehilot, "Asociación Israelita de Basavilbaso" (in Spanish)</a></li>
+                    <li className="mb-2"><a href="https://vaadhakehilot.amia.org.ar/novibuco-muestra/" target="_blank" rel="noreferrer">AMIA Vaad Hakehilot, "Novibuco" (in Spanish)</a></li>
+                    <li className="mb-2"><a href="https://icufargentina.org/la-primera-cooperativa-agricola-del-pais-lucienville/" target="_blank" rel="noreferrer">ICUF Argentina, "La primera cooperativa agrícola del país: Lucienville" (in Spanish)</a></li>
+                  </ul>
+                </Col>
+                <Col sm={6}>
+                  <ul className="list-unstyled mb-0">
+                    <li className="mb-2"><a href="https://kehilalinks.jewishgen.org/basavilbaso/" target="_blank" rel="noreferrer">JewishGen KehilaLinks, "Basavilbaso - Lucienville, Argentina," compiled by Yehuda Mathov</a></li>
+                    <li className="mb-2"><a href="https://en.wikipedia.org/wiki/Maurice_de_Hirsch" target="_blank" rel="noreferrer">Wikipedia, "Maurice de Hirsch"</a></li>
+                    <li className="mb-2 text-muted">Los Gauchos Judíos fieldwork, Basavilbaso, January 2026</li>
+                  </ul>
+                </Col>
+              </Row>
+            </Col>
+            <Col lg={5}>
+              <h5 className="mb-3 text-white">Credits</h5>
+              <p className="mb-2 text-muted"><strong>In partnership with:</strong> the Jewish community of Basavilbaso (Asociación Israelita Basavilbaso) and the cemetery's local caretakers</p>
+              <p className="mb-2 text-muted"><strong>With support from:</strong> the Princeton Institute for International and Regional Studies (PIIRS), the Effron Center, and the Department of Spanish and Portuguese</p>
+              <p className="mb-2 text-muted"><strong>Fieldwork:</strong> Los Gauchos Judíos team, led by Uriel Lin: Andrei Florian, Emily Mitnick, Daniel Levey, Marissa Hirschfield, Eve Shapiro, Florencia Chiaramonte.</p>
+              <p className="mb-0 text-muted"><strong>Archive and website:</strong> Andrei Florian, Ray Kong, Ranajoy Gupta, Uriel Lin</p>
+            </Col>
+          </Row>
+          
+          <hr className="footer-divider" />
+          
+          <div className="d-flex justify-content-between text-muted">
+            <div>
+              <a href="mailto:gauchosjudios@princeton.edu" className="me-3">Contact us</a>
+              <a href="#privacy">Privacy</a>
+            </div>
+            <div>&copy; 2026 Los Gauchos Judíos</div>
           </div>
         </Container>
       </footer>
