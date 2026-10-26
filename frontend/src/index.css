@@ -296,3 +296,9 @@ html, body {
   border-color: #334440;
   margin: 2rem 0;
 }
+
+
+/* Override Bootstrap text-muted for dark background */
+.archive-footer .text-muted {
+  color: #aebdb8 !important;
+}

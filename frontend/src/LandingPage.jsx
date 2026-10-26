@@ -229,9 +229,9 @@ function LandingPage() {
                   const cardClass = `timeline-card shadow-sm ${item.era === 'project' ? 'project-card' : ''} ${item.era === 'future' ? 'future-card' : ''}`;
                   
                   return (
-                    <Row key={index} className="mb-4 align-items-center" ref={el => observerRefs.current.push(el)}>
+                    <Row key={index} className="mb-4 align-items-center">
                       <Col md={6} className={isLeft ? 'pe-md-4 position-relative' : 'order-md-2 ps-md-4 position-relative'}>
-                        <div className={cardClass}>
+                        <div className={cardClass} ref={el => observerRefs.current.push(el)}>
                           <div className="fw-bold mb-1" style={{color: item.era === 'project' ? '#3e5a4d' : '#2b2b2b'}}>{item.date}</div>
                           <div className="fw-bold mb-1">{item.title}</div>
                           <div className="text-muted small">{item.desc}</div>
