@@ -1,0 +1,304 @@
+/**
+ * Global styles and layout rules for the Gauchos Judíos landing page.
+ * Updated to match the final PDF mockup and content specifications.
+ */
+
+html, body {
+  margin: 0;
+  padding: 0;
+  width: 100%;
+  scroll-behavior: smooth;
+  font-family: system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  background-color: #fdfbf7;
+  color: #2b2b2b;
+}
+
+/* H1 & H2: Hero Section */
+.hero-section {
+  position: relative;
+  min-height: 85vh;
+  background-color: #1a2321;
+  color: #ffffff;
+  display: flex;
+  align-items: center;
+  overflow: hidden;
+  padding: 4.5rem 0;
+}
+
+.hero-wordmark {
+  position: absolute;
+  top: 2rem;
+  left: 2.5rem;
+  font-weight: 600;
+  font-size: 1.1rem;
+  z-index: 5;
+  letter-spacing: 0.5px;
+}
+
+.hero-video {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  z-index: 0;
+}
+
+.hero-overlay {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: rgba(0, 0, 0, 0.45);
+  z-index: 1;
+}
+
+.hero-content {
+  position: relative;
+  z-index: 3;
+  margin-top: auto;
+  padding-top: 10vh;
+}
+
+.hero-eyebrow {
+  font-size: 0.85rem;
+  text-transform: uppercase;
+  letter-spacing: 1.5px;
+  margin-bottom: 1rem;
+  font-weight: 600;
+}
+
+.hero-title {
+  font-family: Georgia, "Times New Roman", Times, serif;
+  font-size: 4.5rem;
+  font-weight: bold;
+  line-height: 1.1;
+  margin-bottom: 0.5rem;
+}
+
+.hero-subtitle-line {
+  font-family: Georgia, "Times New Roman", Times, serif;
+  font-size: 2.5rem;
+  font-weight: normal;
+  margin-bottom: 1.5rem;
+}
+
+.hero-search-wrapper {
+  max-width: 540px;
+  margin-top: 2rem;
+}
+
+.hero-search-input {
+  background-color: #ffffff;
+  border: none;
+  padding: 0.9rem 1.2rem;
+  font-size: 1.1rem;
+  border-radius: 0.375rem;
+}
+
+.video-pause-btn {
+  position: absolute;
+  bottom: 2rem;
+  right: 2.5rem;
+  z-index: 5;
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  background-color: transparent;
+  color: #ffffff;
+  border: 1px solid rgba(255, 255, 255, 0.6);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: background-color 0.2s;
+}
+.video-pause-btn:hover {
+  background-color: rgba(255, 255, 255, 0.1);
+}
+
+/* Informational Text Section */
+.info-section {
+  padding: 6rem 0 3rem 0;
+}
+
+.info-block {
+  border-bottom: 1px solid #e2d9c5;
+  padding-bottom: 4rem;
+  margin-bottom: 4rem;
+  opacity: 0;
+  transform: translateY(20px);
+  transition: opacity 0.7s ease-out, transform 0.7s ease-out;
+}
+
+.info-block.is-visible {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+.info-block:last-child {
+  border-bottom: none;
+  margin-bottom: 2rem;
+}
+
+.info-date {
+  font-size: 3.5rem;
+  font-family: Georgia, serif;
+  color: #3e5a4d;
+  line-height: 1;
+  margin-bottom: 0.5rem;
+}
+
+.info-heading {
+  font-weight: bold;
+  font-size: 1.25rem;
+  color: #2b2b2b;
+}
+
+.info-body {
+  font-size: 1.05rem;
+  line-height: 1.7;
+  max-width: 70ch;
+  color: #333;
+}
+
+/* Carousel Section */
+.history-section {
+  padding: 2rem 0 5rem 0;
+}
+
+.carousel-container {
+  max-width: 1000px;
+  margin: 0 auto;
+}
+
+.archive-carousel {
+  border-radius: 0.25rem;
+  overflow: hidden;
+  background-color: #f4efe4;
+}
+
+.carousel-caption-below {
+  background-color: #ffffff;
+  color: #2b2b2b;
+  padding: 1.25rem 1.5rem;
+}
+
+.carousel-counter-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-top: 0.75rem;
+  font-size: 0.9rem;
+  color: #666;
+}
+
+/* Timeline */
+.timeline-section {
+  padding: 4rem 0 6rem 0;
+  background-color: #fdfbf7;
+}
+
+.timeline-wrapper {
+  position: relative;
+  padding: 3rem 0;
+}
+
+.timeline-wrapper::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: 50%;
+  transform: translateX(-50%);
+  border-left: 2px solid #e2d9c5;
+}
+
+.timeline-era-label {
+  position: absolute;
+  left: 50%;
+  transform: translateX(-50%);
+  background-color: #fdfbf7;
+  padding: 0.25rem 1rem;
+  border: 1px solid #e2d9c5;
+  border-radius: 50px;
+  font-size: 0.8rem;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  font-weight: 600;
+  color: #666;
+  z-index: 2;
+}
+
+.era-colonies { top: 0; }
+.era-project { top: 60%; }
+
+.timeline-card {
+  background-color: #ffffff;
+  border: 1px solid #d4cbb8;
+  padding: 1.25rem 1.5rem;
+  border-radius: 0.25rem;
+  opacity: 0;
+  transform: translateY(18px);
+  transition: opacity 0.55s ease-out, transform 0.55s ease-out;
+  position: relative;
+}
+
+.timeline-card.project-card {
+  background-color: #ebf2ef;
+  border-color: #3e5a4d;
+}
+
+.timeline-card.future-card {
+  border-style: dashed;
+  background-color: transparent;
+}
+
+.timeline-card.is-visible {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+.timeline-dot {
+  position: absolute;
+  top: 50%;
+  width: 10px;
+  height: 10px;
+  background-color: #3e5a4d;
+  border-radius: 50%;
+  transform: translateY(-50%);
+}
+
+.dot-left { right: -30px; }
+.dot-right { left: -30px; }
+
+/* Dark Footer */
+.archive-footer {
+  background-color: #1a2321;
+  color: #e0e0e0;
+  padding: 4rem 0 2rem 0;
+  font-size: 0.9rem;
+}
+
+.archive-footer a {
+  color: #a3c4b5;
+  text-decoration: none;
+}
+
+.archive-footer a:hover {
+  text-decoration: underline;
+  color: #ffffff;
+}
+
+.footer-divider {
+  border-color: #334440;
+  margin: 2rem 0;
+}
+
+
+/* Override Bootstrap text-muted for dark background */
+.archive-footer .text-muted {
+  color: #aebdb8 !important;
+}

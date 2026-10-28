@@ -40,3 +40,4 @@ search_algorithm/experiments/outputs/*.npz
 !search_algorithm/final_algorithm/
 search_algorithm/final_algorithm/data/e1_model.safetensors
 search_algorithm/final_algorithm/data/name_vectors.npz
+*.mp4
