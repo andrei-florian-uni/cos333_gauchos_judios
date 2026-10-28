@@ -23,6 +23,10 @@ Until the database exists, the archive comes from a proxy: each row of
 `data/name_vectors.npz` (next to this file) for a table of E1 vectors. `SearchIndex`
 itself takes plain rows, so moving to PostgreSQL only changes the loader.
 """
+import os
+import psycopg2
+from dotenv import load_dotenv, find_dotenv
+from pgvector.psycopg2 import register_vector
 import argparse
 import csv
 import hashlib
@@ -46,7 +50,7 @@ DICTIONARY_WEIGHT = 0.9     # weight of a match found through the dictionary
 DEFAULT_LIMIT     = 10      # results returned per query
 
 MODULE_DIR    = Path(__file__).resolve().parent      # search_algorithm/final_algorithm
-REPO_DIR      = MODULE_DIR.parents[1]                 # the repository root
+REPO_DIR      = MODULE_DIR.parent                    # the repository root
 DATA_DIR      = MODULE_DIR / "data"
 TRANSCRIPTION = REPO_DIR / "ocr_pipeline" / "extracted_text.csv"   # proxy person rows
 DICTIONARY    = DATA_DIR / "name_dictionary.csv"     # D3, frozen from the experiments' step 3
@@ -406,18 +410,30 @@ def person_row(number: int, row: dict) -> dict:
             "death_year": int(row["death_year"]) if row["death_year"].isdigit() else None}
 
 
-def load_vectors(path: Path) -> dict[str, np.ndarray]:
-    """Read cached E1 vectors (an empty map if there is no cache yet)."""
-    if not path.exists():
+def load_vectors_from_db() -> dict[str, np.ndarray]:
+    """Read E1 vectors from the Neon PostgreSQL database."""
+    load_dotenv(find_dotenv())
+    db_url = os.getenv("DATABASE_URL")
+    
+    if not db_url:
+        print("Warning: No DATABASE_URL found. Returning empty vectors.")
         return {}
-    stored = np.load(path)
-    return dict(zip(map(str, stored["texts"]), stored["vectors"]))
 
-
-def save_vectors(path: Path, vectors: dict[str, np.ndarray]) -> None:
-    """Write E1 vectors, by display spelling, to the cache `path`."""
-    np.savez_compressed(path, texts=np.array(list(vectors)),
-                        vectors=np.array(list(vectors.values())))
+    conn = psycopg2.connect(db_url)
+    register_vector(conn)
+    cursor = conn.cursor()
+    
+    # Fetch all spellings and their 256-d vectors
+    cursor.execute("SELECT spelling, embedding::real[] FROM name_vectors;")
+    
+    vectors = {}
+    for spelling, embedding in cursor.fetchall():
+        # Convert the pgvector list back into a NumPy array for the search math
+        vectors[spelling] = np.array(embedding, dtype=np.float32)
+        
+    cursor.close()
+    conn.close()
+    return vectors
 
 
 def download_e1_weights(path: Path = E1_WEIGHTS) -> None:
@@ -442,7 +458,7 @@ def load_proxy_index(transcription: Path = TRANSCRIPTION, dictionary: Path = DIC
     persons = [person_row(number, row)
                for number, row in enumerate(read_csv(transcription), start=1)]
     return SearchIndex(persons, read_csv(dictionary), E1Encoder.from_file(weights),
-                       load_vectors(vector_cache))
+                       load_vectors_from_db())
 
 
 def main() -> None:

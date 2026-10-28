@@ -2,13 +2,13 @@ import os
 import psycopg2
 from dotenv import load_dotenv, find_dotenv
 from pgvector.psycopg2 import register_vector
-from search import (
+from cos333_gauchos_judios.backend.search import (
     read_csv, person_row, collect_names, E1Encoder,
     TRANSCRIPTION, DICTIONARY, E1_WEIGHTS
 )
 
 load_dotenv(find_dotenv())
-DATABASE_URL = os.getenv("TEST_DATABASE_URL")
+DATABASE_URL = os.getenv("DATABASE_URL")
 
 def upload_vectors():
     # 1. Gather all unique spellings using the exact logic from search.py
