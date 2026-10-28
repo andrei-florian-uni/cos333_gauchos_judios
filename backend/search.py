@@ -46,7 +46,7 @@ DICTIONARY_WEIGHT = 0.9     # weight of a match found through the dictionary
 DEFAULT_LIMIT     = 10      # results returned per query
 
 MODULE_DIR    = Path(__file__).resolve().parent      # search_algorithm/final_algorithm
-REPO_DIR      = MODULE_DIR.parents[1]                 # the repository root
+REPO_DIR      = MODULE_DIR.parent                    # the repository root
 DATA_DIR      = MODULE_DIR / "data"
 TRANSCRIPTION = REPO_DIR / "ocr_pipeline" / "extracted_text.csv"   # proxy person rows
 DICTIONARY    = DATA_DIR / "name_dictionary.csv"     # D3, frozen from the experiments' step 3
