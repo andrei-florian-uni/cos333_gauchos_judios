@@ -8,7 +8,7 @@ from cos333_gauchos_judios.backend.search import (
 )
 
 load_dotenv(find_dotenv())
-DATABASE_URL = os.getenv("TEST_DATABASE_URL")
+DATABASE_URL = os.getenv("DATABASE_URL")
 
 def upload_vectors():
     # 1. Gather all unique spellings using the exact logic from search.py
