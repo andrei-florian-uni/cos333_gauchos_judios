@@ -117,14 +117,18 @@ function ExplorePage() {
   }, [urlQuery, searchKey]);
 
   /**
-   * Puts the query into the URL, which starts the search; a repeat of the
-   * same query replaces the history entry instead of adding one.
+   * Starts a search. A new query goes into the URL, which runs the search; the
+   * same query again leaves the URL alone and counts a new attempt instead.
+   * (Doing both for a new query would run the old query once more first.)
    *
    * @param {string} query The trimmed query; empty clears the results.
    */
   const handleSearch = (query) => {
-    setSearchParams(query ? { q: query } : {}, { replace: query === urlQuery });
-    setAttempt((count) => count + 1);
+    if (query === urlQuery) {
+      setAttempt((count) => count + 1);
+    } else {
+      setSearchParams(query ? { q: query } : {});
+    }
   };
 
   return (
