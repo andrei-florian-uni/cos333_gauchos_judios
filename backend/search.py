@@ -10,23 +10,14 @@ surname of another.
 Use it in two steps: build the index once, when the service starts, then
 call `search` for each query.
 
-    index = load_proxy_index()
+    index = SearchIndex(persons, read_dictionary(), load_encoder(), vectors)
     index.search("Eva Bendersky")      # → a list of person rows, best first
 
-From the command line:
-
-    python search_algorithm/final_algorithm/search.py --download-weights --build-vectors
-    python search_algorithm/final_algorithm/search.py "חוה בענדערסקי"
-
-Until the database exists, the archive comes from a proxy: each row of
-`ocr_pipeline/extracted_text.csv` stands in for a `person` row, and
-`data/name_vectors.npz` (next to this file) for a table of E1 vectors. `SearchIndex`
-itself takes plain rows, so moving to PostgreSQL only changes the loader.
+The module holds no database code: `app.py` reads the person rows and the
+`name_vectors` table through `db.py` and passes them in. The two files the
+search needs ship with the service in `data/`: the name dictionary D3 and
+E1's weights, which `python backend/search.py --download-weights` restores.
 """
-import os
-import psycopg2
-from dotenv import load_dotenv, find_dotenv
-from pgvector.psycopg2 import register_vector
 import argparse
 import csv
 import hashlib
@@ -34,6 +25,7 @@ import re
 import unicodedata
 import urllib.request
 from collections import Counter, defaultdict
+from collections.abc import Callable
 from dataclasses import dataclass
 from pathlib import Path
 
@@ -49,20 +41,17 @@ TAU_LINK          = 0.95    # lowest cosine linking an archive spelling to a dic
 DICTIONARY_WEIGHT = 0.9     # weight of a match found through the dictionary
 DEFAULT_LIMIT     = 10      # results returned per query
 
-MODULE_DIR    = Path(__file__).resolve().parent      # search_algorithm/final_algorithm
-REPO_DIR      = MODULE_DIR.parent                    # the repository root
+MODULE_DIR    = Path(__file__).resolve().parent      # backend/
 DATA_DIR      = MODULE_DIR / "data"
-TRANSCRIPTION = REPO_DIR / "ocr_pipeline" / "extracted_text.csv"   # proxy person rows
 DICTIONARY    = DATA_DIR / "name_dictionary.csv"     # D3, frozen from the experiments' step 3
-E1_WEIGHTS    = DATA_DIR / "e1_model.safetensors"    # downloaded; not in git
-VECTOR_CACHE  = DATA_DIR / "name_vectors.npz"        # E1 vector of every spelling; not in git
+E1_WEIGHTS    = DATA_DIR / "e1_model.safetensors"    # E1's weights, committed with the service
 E1_URL        = ("https://raw.githubusercontent.com/vedant-jumle/cross-language-phonetic-text-"
                  "alignment/08ae1d4e5193d8b324e8313b8f3abbd9fb4f907f/checkpoints/best_v2/"
                  "model.safetensors")                # the checkpoint the experiments used (MIT)
 E1_SHA256     = "670eabacf117f145794628fac65e0eedc3d072f14df4bdf9d1eeefe5813d138b"
 
-NAME_COLUMNS = {"given_name_es": "given", "given_name_he": "given",
-                "surname_es": "surname", "surname_he": "surname"}   # the columns searched
+NAME_COLUMNS = {"name_es": "given", "name_he": "given",
+                "surname_es": "surname", "surname_he": "surname"}   # the person columns searched
 PARTICLES         = {"de", "דע"}                          # married-name particle, dropped
 FINAL_TO_MEDIAL   = str.maketrans("ךםןףץ", "כמנפצ")       # Hebrew final letters → medial
 MAQAF             = "\N{HEBREW PUNCTUATION MAQAF}"       # the Hebrew hyphen
@@ -75,7 +64,7 @@ YIDDISH_LIGATURES = {"\N{HEBREW LIGATURE YIDDISH DOUBLE VAV}": "וו",
 
 
 # ═════════════════════════════════════════════════════════════════════════════
-# NAMES  —  the normalisation of the experiments (and of the future import.py)
+# NAMES  —  the normalisation of the experiments, shared with import.py
 # ═════════════════════════════════════════════════════════════════════════════
 def word_script(word: str) -> str:
     """Return "hebrew" if `word` holds any Hebrew character, else "latin"."""
@@ -121,7 +110,8 @@ def name_words(text: str) -> list[dict]:
     """Split a name field or a query into words.
 
     Initials (one letter) and the married-name particle "de" are dropped,
-    as the archive's names were in the experiments.
+    as the archive's names were in the experiments, and so are symbols that
+    only look like letters (`Ⅻ`, `㎏`), which leave E1 nothing to read.
 
     Returns:
         One dictionary per word: its script, normalised form and display spelling.
@@ -129,10 +119,9 @@ def name_words(text: str) -> list[dict]:
     words = []
     for piece in WORD_SPLIT.split(text.strip()):
         script = word_script(piece)
-        norm = normalise(piece, script)
-        if len(norm) >= 2 and norm not in PARTICLES:
-            words.append({"script": script, "norm": norm,
-                          "display": display_spelling(piece, script)})
+        norm, display = normalise(piece, script), display_spelling(piece, script)
+        if len(norm) >= 2 and norm not in PARTICLES and display:
+            words.append({"script": script, "norm": norm, "display": display})
     return words
 
 
@@ -306,7 +295,7 @@ class SearchIndex:
         words, displays, n_archive = collect_names(persons, dictionary)
         known = dict(vectors or {})
         missing = [display for display in displays.values() if display not in known]
-        if missing:                       # e.g. no cache yet, or a new name in the archive
+        if missing:                       # e.g. a spelling the loader has not encoded yet
             known.update(zip(missing, encoder.encode(missing)))
         self.spellings = Spellings({key: i for i, key in enumerate(displays)},
                                    list(displays.values()),
@@ -317,20 +306,35 @@ class SearchIndex:
             spelling=np.array([self.spellings.position[key] for _, _, key in words], dtype=int))
         self.links = link_spellings(self.spellings, dictionary)
 
-    def search(self, query: str, limit: int = DEFAULT_LIMIT) -> list[dict]:
-        """Return the person rows that best match `query`, best first, each with its score."""
-        return [self.persons[person] | {"score": round(score, 3)}
-                for person, score in self.rank(name_words(query), limit)]
+    def search(self, query: str, limit: int = DEFAULT_LIMIT,
+               keep: Callable[[dict], bool] | None = None) -> list[dict]:
+        """Return the person rows that best match `query`, best first, each with its score.
 
-    def rank(self, words: list[dict], limit: int = DEFAULT_LIMIT) -> list[tuple[int, float]]:
+        Args:
+            query: the name typed, in either script and with its words in any order.
+            limit: the largest number of results to return.
+            keep: the search's filters, as a function that is True for each
+                person row the search may return; None lets every row through.
+        """
+        allowed = None
+        if keep is not None:
+            allowed = np.array([keep(person) for person in self.persons], dtype=bool)
+        return [self.persons[person] | {"score": round(score, 3)}
+                for person, score in self.rank(name_words(query), limit, allowed)]
+
+    def rank(self, words: list[dict], limit: int = DEFAULT_LIMIT,
+             allowed: np.ndarray | None = None) -> list[tuple[int, float]]:
         """Score every person for the query `words`; return the best `limit` as
-        (position, score), ties in row order. Persons scoring 0 are left out."""
+        (position, score), ties in row order. Persons scoring 0, and persons
+        that `allowed` (one boolean per person) marks False, are left out."""
         if not words or limit < 1:
             return []
         query_vectors = self.encoder.encode([word["display"] for word in words])
         similarity = np.array([self.word_similarity(word, vector)
                                for word, vector in zip(words, query_vectors)])
         scores = self.person_scores(similarity[:, self.tokens.spelling])
+        if allowed is not None:
+            scores = np.where(allowed, scores, 0.0)      # the filters apply before the limit
         found = np.flatnonzero(scores > 0)
         best = found[np.lexsort((found, -scores[found]))][:limit]
         return [(int(person), float(scores[person])) for person in best]
@@ -385,55 +389,22 @@ class SearchIndex:
                     best = np.maximum(best, given[first] + surname[second])
         return best
 
-    def spelling_vectors(self) -> dict[str, np.ndarray]:
-        """Return the E1 vector of every spelling, by display spelling (for the cache)."""
-        return dict(zip(self.spellings.displays, self.spellings.vectors))
-
 
 # ═════════════════════════════════════════════════════════════════════════════
-# PROXY DATA  —  stands in for PostgreSQL until the backend exists
+# FILES  —  the name dictionary and E1's weights, which ship with the service
 # ═════════════════════════════════════════════════════════════════════════════
-def read_csv(path: Path) -> list[dict]:
-    """Read the CSV file `path` into a list of dictionaries."""
+def read_dictionary(path: Path = DICTIONARY) -> list[dict]:
+    """Read the name dictionary D3 into a list of rows (group_id, script, norm, display)."""
     with path.open(encoding="utf-8", newline="") as file:
         return list(csv.DictReader(file))
 
 
-def person_row(number: int, row: dict) -> dict:
-    """Return one transcription row as the person row the database will hold.
-
-    The row's position in the file stands in for the database's person id.
-    Rows are labels, not numbers ("2B", "Misc"), so they stay text.
-    """
-    return {"person_id": number, "section": row["section"], "row": row["row"],
-            "stone": int(row["stone"]), **{column: row[column] for column in NAME_COLUMNS},
-            "death_year": int(row["death_year"]) if row["death_year"].isdigit() else None}
-
-
-def load_vectors_from_db() -> dict[str, np.ndarray]:
-    """Read E1 vectors from the Neon PostgreSQL database."""
-    load_dotenv(find_dotenv())
-    db_url = os.getenv("DATABASE_URL")
-    
-    if not db_url:
-        print("Warning: No DATABASE_URL found. Returning empty vectors.")
-        return {}
-
-    conn = psycopg2.connect(db_url)
-    register_vector(conn)
-    cursor = conn.cursor()
-    
-    # Fetch all spellings and their 256-d vectors
-    cursor.execute("SELECT spelling, embedding::real[] FROM name_vectors;")
-    
-    vectors = {}
-    for spelling, embedding in cursor.fetchall():
-        # Convert the pgvector list back into a NumPy array for the search math
-        vectors[spelling] = np.array(embedding, dtype=np.float32)
-        
-    cursor.close()
-    conn.close()
-    return vectors
+def load_encoder(path: Path = E1_WEIGHTS) -> E1Encoder:
+    """Return E1 with the weights stored at `path`, explaining how to restore them if missing."""
+    if not path.exists():
+        raise FileNotFoundError(f"{path} is missing: run `python backend/search.py "
+                                "--download-weights` to restore it")
+    return E1Encoder.from_file(path)
 
 
 def download_e1_weights(path: Path = E1_WEIGHTS) -> None:
@@ -445,40 +416,17 @@ def download_e1_weights(path: Path = E1_WEIGHTS) -> None:
     path.write_bytes(data)
 
 
-def load_proxy_index(transcription: Path = TRANSCRIPTION, dictionary: Path = DICTIONARY,
-                     weights: Path = E1_WEIGHTS, vector_cache: Path = VECTOR_CACHE) -> SearchIndex:
-    """Build the index from the proxy files.
-
-    Without a vector cache, every spelling is encoded first, which takes a
-    minute or so; `--build-vectors` writes the cache.
-    """
-    if not weights.exists():
-        raise FileNotFoundError(f"{weights} is missing: run `python search_algorithm/"
-                                "final_algorithm/search.py --download-weights` first")
-    persons = [person_row(number, row)
-               for number, row in enumerate(read_csv(transcription), start=1)]
-    return SearchIndex(persons, read_csv(dictionary), E1Encoder.from_file(weights),
-                       load_vectors_from_db())
-
-
 def main() -> None:
-    """Search from the command line, and prepare the data files."""
-    parser = argparse.ArgumentParser(description="Search the archive by name.")
-    parser.add_argument("query", nargs="*", help="the name to search for, e.g. Eva Bendersky")
-    parser.add_argument("--limit", type=int, default=DEFAULT_LIMIT, help="results to show")
-    parser.add_argument("--download-weights", action="store_true", help="download E1's weights")
-    parser.add_argument("--build-vectors", action="store_true", help="write the vector cache")
+    """Restore E1's weights from the command line: `python backend/search.py --download-weights`."""
+    parser = argparse.ArgumentParser(description="Prepare the files the name search needs.")
+    parser.add_argument("--download-weights", action="store_true",
+                        help="download E1's weights into backend/data/ and check them")
     args = parser.parse_args()
     if args.download_weights:
         download_e1_weights()
-    index = load_proxy_index()
-    if args.build_vectors:
-        save_vectors(VECTOR_CACHE, index.spelling_vectors())
-    for result in index.search(" ".join(args.query), args.limit):
-        names = " ".join(filter(None, (result["given_name_es"], result["surname_es"])))
-        hebrew = " ".join(filter(None, (result["given_name_he"], result["surname_he"])))
-        print(f"{result['score']:5.2f}  {names or '—'} · {hebrew or '—'} · {result['section']}, "
-              f"row {result['row']}, stone {result['stone']}, died {result['death_year'] or '?'}")
+        print(f"E1's weights saved to {E1_WEIGHTS}")
+    else:
+        parser.print_help()
 
 
 if __name__ == "__main__":

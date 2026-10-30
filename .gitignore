@@ -1,8 +1,10 @@
 # macOS
 .DS_Store
 
-# Secrets such as API keys live in .env files, which are never committed
-.env
+# Secrets such as API keys live in .env files, which are never committed; the
+# frontend's development settings hold no secret and are shared
+.env*
+!frontend/.env.development
 
 # Python
 __pycache__/
@@ -34,10 +36,12 @@ search_algorithm/experiments/*
 !search_algorithm/experiments/outputs/
 search_algorithm/experiments/outputs/*.npz
 
-# Final algorithm: tracked, except the downloaded E1 weights and the vector
-# cache, rebuilt with
-# `python search_algorithm/final_algorithm/search.py --download-weights --build-vectors`.
-!search_algorithm/final_algorithm/
-search_algorithm/final_algorithm/data/e1_model.safetensors
-search_algorithm/final_algorithm/data/name_vectors.npz
+# The final search moved to backend/ (search.py, with the name dictionary and
+# E1's weights committed in backend/data/); anything left in
+# search_algorithm/final_algorithm/ is local only.
+
+# Hero videos stay local until they move to Cloudinary
 *.mp4
+
+# Conda environments, wherever they are created
+.conda

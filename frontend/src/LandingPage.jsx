@@ -1,3 +1,11 @@
+/**
+ * Landing page (/): the public introduction to the archive, regions H1–H5 of
+ * the Project Design. A hero over the background video with the map and
+ * "Learn more" buttons and a name search (H1, H2), the community's history
+ * and a carousel of fieldwork photos (H3), a two-sided timeline (H4), and a
+ * footer with sources, credits, contact and privacy links (H5).
+ */
+
 import { useState, useRef, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Container, Row, Col, Button, Form, Carousel } from 'react-bootstrap';
@@ -12,6 +20,7 @@ import img6 from './assets/carousel_06_interview.jpg';
 import img7 from './assets/carousel_07_station.jpg';
 import img8 from './assets/carousel_08_team.jpg';
 
+// Carousel slides (H3): each photo with a title and the caption shown under it.
 const HISTORY_SLIDES = [
   { id: '1', img: img1, title: 'Arriving at the cemetery', caption: 'The team at the entrance building, whose sign reads "Cementerio Israelita fundado en 1895."' },
   { id: '2', img: img2, title: 'The cemetery from above', caption: 'A brick wall encloses about 2,500 headstones in the open farmland outside Basavilbaso.' },
@@ -23,6 +32,8 @@ const HISTORY_SLIDES = [
   { id: '8', img: img8, title: 'The team', caption: 'Princeton students with local caretakers and community members who made the work possible.' }
 ];
 
+// Timeline entries (H4), in order. `era` picks the card's style: the colonies,
+// the project, or the future.
 const TIMELINE_EVENTS = [
   { era: 'colonies', date: '1880s-1900s', title: 'Pogroms in the Russian Empire', desc: 'Violence and new restrictions push Jewish families to look for a life elsewhere.' },
   { era: 'colonies', date: '1887', title: 'The railway reaches Basavilbaso', desc: 'A new station on the Entre Ríos line, around which the colony will grow.' },
@@ -36,15 +47,36 @@ const TIMELINE_EVENTS = [
   { era: 'future', date: 'Next', title: 'The men\'s section', desc: 'A future trip will document the rest of the cemetery.' }
 ];
 
+/**
+ * Renders the landing page.
+ *
+ * @returns {JSX.Element} The page's sections, from the hero to the footer.
+ */
 function LandingPage() {
   const [searchQuery, setSearchQuery] = useState('');
   const [isVideoPlaying, setIsVideoPlaying] = useState(true);
   const [carouselIndex, setCarouselIndex] = useState(0);
-  
+
   const videoRef = useRef(null);
-  const observerRefs = useRef([]);
+  // Elements that fade in when scrolled into view. A Set, because React calls
+  // a ref callback again on every render; a Set keeps each element once.
+  const observerRefs = useRef(new Set());
   const navigate = useNavigate();
 
+  /**
+   * Ref callback that registers an element to fade in.
+   *
+   * @param {?HTMLElement} element The element, or null when React detaches it.
+   */
+  function addFadeIn(element) {
+    if (element) observerRefs.current.add(element);
+  }
+
+  /**
+   * Opens the explore page with the typed name as its query, or with none.
+   *
+   * @param {Event} event The search form's submit event.
+   */
   function handleSearchSubmit(event) {
     event.preventDefault();
     const query = searchQuery.trim();
@@ -55,6 +87,7 @@ function LandingPage() {
     }
   }
 
+  /** Pauses the background video if it is playing, and plays it if it is paused. */
   function handleToggleVideo() {
     if (videoRef.current) {
       if (videoRef.current.paused) {
@@ -67,6 +100,7 @@ function LandingPage() {
     }
   }
 
+  // Fade each history block and timeline card in once 15% of it is on screen.
   useEffect(() => {
     const observer = new IntersectionObserver((entries) => {
       entries.forEach(entry => {
@@ -137,7 +171,7 @@ function LandingPage() {
         <Container>
           <Row className="justify-content-center">
             <Col lg={10}>
-              <div className="info-block" ref={el => observerRefs.current.push(el)}>
+              <div className="info-block" ref={addFadeIn}>
                 <Row>
                   <Col md={4}><div className="info-date">1894</div><div className="info-heading">Jewish Farmers in the Pampas of Argentina</div></Col>
                   <Col md={8}>
@@ -151,7 +185,7 @@ function LandingPage() {
                 </Row>
               </div>
 
-              <div className="info-block" ref={el => observerRefs.current.push(el)}>
+              <div className="info-block" ref={addFadeIn}>
                 <Row>
                   <Col md={4}><div className="info-date">1895</div><div className="info-heading">Cementerio Israelita, Colonia N.º 1</div></Col>
                   <Col md={8}>
@@ -165,7 +199,7 @@ function LandingPage() {
                 </Row>
               </div>
 
-              <div className="info-block" ref={el => observerRefs.current.push(el)}>
+              <div className="info-block" ref={addFadeIn}>
                 <Row>
                   <Col md={4}><div className="info-date">2026</div><div className="info-heading">Los Gauchos Judíos</div></Col>
                   <Col md={8}>
@@ -231,7 +265,7 @@ function LandingPage() {
                   return (
                     <Row key={index} className="mb-4 align-items-center">
                       <Col md={6} className={isLeft ? 'pe-md-4 position-relative' : 'order-md-2 ps-md-4 position-relative'}>
-                        <div className={cardClass} ref={el => observerRefs.current.push(el)}>
+                        <div className={cardClass} ref={addFadeIn}>
                           <div className="fw-bold mb-1" style={{color: item.era === 'project' ? '#3e5a4d' : '#2b2b2b'}}>{item.date}</div>
                           <div className="fw-bold mb-1">{item.title}</div>
                           <div className="text-muted small">{item.desc}</div>

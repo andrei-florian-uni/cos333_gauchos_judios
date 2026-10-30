@@ -1,16 +1,32 @@
-# React + Vite
+# Gauchos Judíos · frontend
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+The public website of the archive: a React 19 single-page app built with Vite
+and styled with react-bootstrap (Bootstrap 5.3).
 
-Currently, two official plugins are available:
+| Route | Page |
+| --- | --- |
+| `/` | Landing page (`src/LandingPage.jsx`) |
+| `/explore?q=…` | Name search and results (`src/ExplorePage.jsx`) |
+| `/record/:ref` | Placeholder for a grave's record, e.g. `/record/W-12-4` |
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Oxc](https://oxc.rs)
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/)
+## Running it
 
-## React Compiler
+```bash
+npm install
+npm run dev      # http://localhost:5173
+npm run lint     # before every change
+npm run build    # production bundle in dist/
+```
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
+Searches go to the Flask API through `src/api.js`, at the address in
+`VITE_API_URL`:
 
-## Expanding the ESLint configuration
-
-If you are developing a production application, we recommend using TypeScript with type-aware lint rules enabled. Check out the [TS template](https://github.com/vitejs/vite/tree/main/packages/create-vite/template-react-ts) for information on how to integrate TypeScript and [`typescript-eslint`](https://typescript-eslint.io) in your project.
+- `npm run dev` reads `.env.development`, which points at a local API
+  (`python app.py` from `backend/`, port 5001). That API uses the database in
+  `backend/.env` (the shared one) unless `DATABASE_URL` is set in the shell.
+- The API accepts browser requests only from the origins in its `CORS_ORIGINS`
+  setting, by default `http://localhost:5173`. If Vite starts on another port,
+  searches fail until that port is added.
+- `npm run build` does not read `.env.development`: set `VITE_API_URL` for the
+  build (Render does so from its environment settings), or the built site
+  sends its searches to itself and every search fails.
