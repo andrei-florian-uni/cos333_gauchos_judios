@@ -7,15 +7,19 @@
  * HTTPS address from Render's environment settings.
  */
 
+import { searchParamsFor } from './searchFilters.js';
+
 // The API's address without a trailing slash; empty means the site's own origin.
 const API_URL = (import.meta.env.VITE_API_URL || '').replace(/\/+$/, '');
 
 const SEARCH_FAILED = 'The search could not be completed. Please try again.';
 
 /**
- * Searches the archive by name.
+ * Searches the archive by name, keeping only the people who pass the filters.
  *
  * @param {string} query The name typed, in either script and in any order.
+ * @param {object} filters The filters (see searchFilters.js); those set to ''
+ *   are not sent. The API applies them before it picks the best matches.
  * @param {AbortSignal} [signal] Cancels the request, e.g. when a newer search starts.
  * @returns {Promise<Array<object>>} The matching people, best first. Each holds
  *   person_id, ref, section, row, stone, name_es, surname_es, name_he,
@@ -23,10 +27,11 @@ const SEARCH_FAILED = 'The search could not be completed. Please try again.';
  * @throws {Error} When the API cannot be reached, answers with an error or
  *   does not answer with JSON; an AbortError when `signal` cancels the request.
  */
-export async function searchArchive(query, signal) {
+export async function searchArchive(query, filters, signal) {
   let response;
   try {
-    response = await fetch(`${API_URL}/api/search?q=${encodeURIComponent(query)}`, { signal });
+    // e.g. /api/search?q=Eva&death_from=1920&section=women; URLSearchParams encodes each value.
+    response = await fetch(`${API_URL}/api/search?${searchParamsFor(query, filters)}`, { signal });
   } catch (err) {
     // A cancelled request is passed on as it is; a network failure gets a plain message.
     if (err.name === 'AbortError') throw err;
