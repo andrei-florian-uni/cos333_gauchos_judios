@@ -1,15 +1,22 @@
 /**
- * Explore page (/explore): a name search box and the list of matching people.
+ * Explore page (/explore): a name search box with filters, and the list of
+ * matching people.
  *
- * The query lives in the URL (?q=…), so a search from the landing page, a
- * shared link and the browser's Back button all show the right results. The
+ * The search lives in the URL (?q=…, plus any filters, such as
+ * &death_from=1920&section=women), so a search from the landing page, a shared
+ * link and the browser's Back button all show the right results. The filters
+ * narrow a name search: the API finds no one for a search without a name. The
  * cemetery map is not part of this page yet.
  */
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { Container, Table, Spinner, Alert, Form, Button, Row, Col } from 'react-bootstrap';
 import { searchArchive } from './api.js';
+import FiltersMenu from './FiltersMenu.jsx';
+import {
+  NO_FILTERS, clearFilters, describeFilters, hasFilters, readFilters, searchParamsFor,
+} from './searchFilters.js';
 
 /**
  * Joins the non-empty parts of a name with spaces.
@@ -46,41 +53,78 @@ function describeYears(person) {
 }
 
 /**
- * The search box. It starts from the URL's query; the page gives it a new
- * `key` whenever that query changes (Back, Forward, a new search), so the box
- * always shows the query whose results are listed.
+ * The filters in use, as chips, each with a × that removes it.
+ *
+ * @param {object} props
+ * @param {object} props.filters The filters in the URL.
+ * @param {function(string[]): void} props.onRemove Called with the filter keys
+ *   that a chip's × clears.
+ * @returns {JSX.Element[]} One chip per filter in use; none when no filter is set.
+ */
+function FilterChips({ filters, onRemove }) {
+  return describeFilters(filters).map((chip) => (
+    <span key={chip.keys.join()} className="filter-chip">
+      {chip.label}
+      <button
+        type="button"
+        className="filter-chip-remove"
+        aria-label={`Remove filter: ${chip.label}`}
+        onClick={() => onRemove(chip.keys)}
+      >
+        ×
+      </button>
+    </span>
+  ));
+}
+
+/**
+ * The search box, with the Filters button and the chips of the filters in use
+ * underneath. It starts from the URL's query; the page gives it a new `key`
+ * whenever that query changes (Back, Forward, a new search), so the box always
+ * shows the query whose results are listed.
+ *
+ * Every action here searches for the name currently in the box: pressing
+ * Search, applying filters or removing a chip.
  *
  * @param {object} props
  * @param {string} props.initialQuery The query in the URL.
- * @param {function(string): void} props.onSearch Called with the trimmed query on submit.
- * @returns {JSX.Element} The search form.
+ * @param {object} props.filters The filters in the URL.
+ * @param {function(string, object): void} props.onSearch Called with the
+ *   trimmed query and the filters to search with.
+ * @returns {JSX.Element} The search form and its filters.
  */
-function SearchForm({ initialQuery, onSearch }) {
+function SearchForm({ initialQuery, filters, onSearch }) {
   const [text, setText] = useState(initialQuery);
 
   /**
-   * Hands the typed query to the page.
+   * Hands the typed query to the page, with the filters unchanged.
    *
    * @param {Event} e The form's submit event.
    */
   const handleSubmit = (e) => {
     e.preventDefault();
-    onSearch(text.trim());
+    onSearch(text.trim(), filters);
   };
 
   return (
-    <Form onSubmit={handleSubmit} className="d-flex gap-2 mt-3" role="search">
-      <Form.Control
-        type="search"
-        value={text}
-        onChange={(e) => setText(e.target.value)}
-        placeholder="Search for a name..."
-        aria-label="Name to search for"
-      />
-      <Button variant="success" type="submit" style={{ backgroundColor: '#3e5a4d', borderColor: '#3e5a4d' }}>
-        Search
-      </Button>
-    </Form>
+    <div className="mt-3">
+      <Form onSubmit={handleSubmit} className="d-flex gap-2" role="search">
+        <Form.Control
+          type="search"
+          value={text}
+          onChange={(e) => setText(e.target.value)}
+          placeholder="Search for a name..."
+          aria-label="Name to search for"
+        />
+        <Button variant="success" type="submit" style={{ backgroundColor: '#3e5a4d', borderColor: '#3e5a4d' }}>
+          Search
+        </Button>
+      </Form>
+      <div className="d-flex flex-wrap align-items-center gap-2 mt-2">
+        <FiltersMenu filters={filters} onApply={(chosen) => onSearch(text.trim(), chosen)} />
+        <FilterChips filters={filters} onRemove={(keys) => onSearch(text.trim(), clearFilters(filters, keys))} />
+      </div>
+    </div>
   );
 }
 
@@ -92,53 +136,72 @@ function SearchForm({ initialQuery, onSearch }) {
 function ExplorePage() {
   const [searchParams, setSearchParams] = useSearchParams();
   const urlQuery = searchParams.get('q') || '';
+  // A new filters object only when the URL's query string changes, so the
+  // search effect below does not run again on every render.
+  const urlParams = searchParams.toString();
+  const filters = useMemo(() => readFilters(new URLSearchParams(urlParams)), [urlParams]);
+  const filtersSet = hasFilters(filters);
+  // The whole search (name and filters) as one string, e.g. "q=Eva&section=women".
+  const searchString = searchParamsFor(urlQuery, filters).toString();
 
-  // `attempt` counts submissions, so that submitting the same query again
+  // `attempt` counts submissions, so that submitting the same search again
   // (after an error, say) runs the search again.
   const [attempt, setAttempt] = useState(0);
   // The outcome of the last search that finished, and which search it was.
   const [finished, setFinished] = useState({ key: '', results: [], error: null });
 
-  const searchKey = urlQuery ? `${attempt}:${urlQuery}` : '';
+  // Only a search with a name runs: the API finds no one without one.
+  const searchKey = urlQuery ? `${attempt}:${searchString}` : '';
   const isLoading = searchKey !== '' && finished.key !== searchKey;
   const shown = !isLoading && searchKey !== '' ? finished : { results: [], error: null };
 
-  // Run the search whenever the query or the attempt changes. A search that a
-  // newer one overtakes is cancelled, so stale results never show.
+  // Run the search whenever the query, the filters or the attempt change. A
+  // search that a newer one overtakes is cancelled, so stale results never show.
   useEffect(() => {
     if (!urlQuery) return undefined;
     const controller = new AbortController();
-    searchArchive(urlQuery, controller.signal)
+    searchArchive(urlQuery, filters, controller.signal)
       .then((results) => setFinished({ key: searchKey, results, error: null }))
       .catch((err) => {
         if (err.name !== 'AbortError') setFinished({ key: searchKey, results: [], error: err.message });
       });
     return () => controller.abort();
-  }, [urlQuery, searchKey]);
+  }, [urlQuery, filters, searchKey]);
 
   /**
-   * Starts a search. A new query goes into the URL, which runs the search; the
-   * same query again leaves the URL alone and counts a new attempt instead.
-   * (Doing both for a new query would run the old query once more first.)
+   * Starts a search. A new search goes into the URL, which runs it; the same
+   * search again leaves the URL alone and counts a new attempt instead.
+   * (Doing both for a new search would run the old one once more first.)
    *
    * @param {string} query The trimmed query; empty clears the results.
+   * @param {object} newFilters The filters to search with.
    */
-  const handleSearch = (query) => {
-    if (query === urlQuery) {
+  const handleSearch = (query, newFilters) => {
+    const next = searchParamsFor(query, newFilters);
+    if (next.toString() === searchString) {
       setAttempt((count) => count + 1);
     } else {
-      setSearchParams(query ? { q: query } : {});
+      setSearchParams(next);
     }
   };
+
+  const count = shown.results.length;
 
   return (
     <Container className="py-5 mt-5">
       <Row className="mb-4">
         <Col md={8} lg={6}>
           <h2>Archive Search</h2>
-          <SearchForm key={urlQuery} initialQuery={urlQuery} onSearch={handleSearch} />
+          <SearchForm key={urlQuery} initialQuery={urlQuery} filters={filters} onSearch={handleSearch} />
         </Col>
       </Row>
+
+      {/* Filters but no name */}
+      {!urlQuery && filtersSet && (
+        <Alert variant="info" role="status">
+          Type a name to search. The filters narrow a name search; they cannot list records on their own yet.
+        </Alert>
+      )}
 
       {/* Loading State */}
       {isLoading && (
@@ -158,13 +221,23 @@ function ExplorePage() {
       {/* Results State */}
       {!isLoading && !shown.error && urlQuery && shown.results.length === 0 && (
         <Alert variant="info" role="status">
-          No people found matching "{urlQuery}".
+          No people found matching "{urlQuery}"{filtersSet ? ' with these filters' : ''}.
+          {filtersSet && (
+            <Button variant="link" className="p-0 ms-2 align-baseline" onClick={() => handleSearch(urlQuery, NO_FILTERS)}>
+              Clear filters
+            </Button>
+          )}
         </Alert>
       )}
 
-      {shown.results.length > 0 && (
+      {count > 0 && (
+        <p className="text-muted small mb-2" role="status">
+          {count} {count === 1 ? 'result' : 'results'} · best match first
+        </p>
+      )}
+
+      {count > 0 && (
         <div className="table-responsive shadow-sm rounded">
-          <p className="visually-hidden" role="status">{shown.results.length} people found</p>
           <Table hover className="align-middle mb-0 bg-white">
             <thead className="bg-light">
               <tr>
