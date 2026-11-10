@@ -151,3 +151,41 @@ def fetch_name_vectors(conn: psycopg.Connection) -> dict[str, np.ndarray]:
     """
     return {row["spelling"]: np.asarray(row["vector"], dtype=np.float32)
             for row in conn.execute(NAME_VECTORS_SQL)}
+
+def fetch_grave_record(conn: psycopg.Connection, ref: str) -> dict | None:
+    """Return the grave, its people, and its photos by reference (e.g., W-12-4)."""
+    parts = ref.split('-')
+    if len(parts) != 3 or parts[0] not in SECTION_LETTERS.values():
+        return None
+    section = next((k for k, v in SECTION_LETTERS.items() if v == parts[0]), None)
+    try:
+        stone_number = int(parts[2])
+    except ValueError:
+        return None
+
+    grave = conn.execute(
+        "SELECT id, section, row_label, stone_number FROM grave WHERE section = %s AND row_label = %s AND stone_number = %s",
+        (section, parts[1], stone_number)
+    ).fetchone()
+
+    if not grave:
+        return None
+
+    persons = conn.execute(
+        "SELECT * FROM person WHERE grave_id = %s ORDER BY id",
+        (grave["id"],)
+    ).fetchall()
+
+    photos = conn.execute(
+        "SELECT kind, cloudinary_public_id, width, height, sort_order FROM photo WHERE grave_id = %s ORDER BY kind = 'main' DESC, sort_order",
+        (grave["id"],)
+    ).fetchall()
+
+    return {
+        "ref": ref,
+        "section": grave["section"],
+        "row": grave["row_label"],
+        "stone": grave["stone_number"],
+        "persons": [dict(p) for p in persons],
+        "photos": [dict(p) for p in photos]
+    }
