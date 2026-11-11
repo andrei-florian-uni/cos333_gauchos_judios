@@ -151,6 +151,16 @@ def search_route():
     return jsonify({"results": current_app.config["SEARCH_INDEX"].search(query, keep=keep)})
 
 
+
+def grave_route(ref):
+    """GET /api/graves/<ref>: the full grave record including people and photos."""
+    with db.connect() as conn:
+        record = db.fetch_grave_record(conn, ref)
+    if not record:
+        return jsonify({"error": "Grave not found"}), 404
+    return jsonify(record)
+
+
 def health_route():
     """GET /health: whether the service is up, and how many people it can search."""
     return jsonify({"status": "ok",
@@ -184,6 +194,7 @@ def create_app(search_index: SearchIndex | None = None) -> Flask:
     application.config["SEARCH_INDEX"] = (build_search_index() if search_index is None
                                           else search_index)
     application.add_url_rule("/api/search", view_func=search_route, methods=["GET"])
+    application.add_url_rule("/api/graves/<ref>", view_func=grave_route, methods=["GET"])
     application.add_url_rule("/health", view_func=health_route, methods=["GET"])
     application.register_error_handler(InvalidParameter, bad_request)
     application.register_error_handler(500, server_error)

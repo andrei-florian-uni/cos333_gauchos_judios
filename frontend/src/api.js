@@ -49,3 +49,8 @@ export async function searchArchive(query, filters, signal) {
     throw new Error(SEARCH_FAILED, { cause: err });
   }
 }
+export async function getRecord(ref) {
+  const response = await fetch(`${API_URL}/api/graves/${encodeURIComponent(ref)}`);
+  if (!response.ok) throw new Error('Grave record not found.');
+  return await response.json();
+}

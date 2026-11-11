@@ -482,3 +482,39 @@ html, body {
   color: #3e5a4d;
   font-weight: 600;
 }
+
+/* Gravestone Record Pane (N8) */
+.record-pane-wrapper {
+  max-height: calc(100vh - 120px);
+  overflow-y: auto;
+}
+
+.record-pane {
+  border: 1px solid #e2d9c5;
+}
+
+.record-pane .border-secondary-subtle {
+  border-color: #d4cbb8 !important;
+  background-color: #f4efe4 !important;
+}
+
+@keyframes slideIn {
+  from {
+    opacity: 0;
+    transform: translateX(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+/* Table Hover and Active States */
+.table-hover tbody tr:hover {
+  background-color: #fdfbf7;
+}
+
+.table-active {
+  background-color: #ebf2ef !important;
+  box-shadow: inset 4px 0 0 #3e5a4d;
+}
