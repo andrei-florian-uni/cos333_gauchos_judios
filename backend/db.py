@@ -42,6 +42,18 @@ SEARCH_ROWS_SQL = """
      ORDER BY grave.section, grave.row_label, grave.stone_number, person.id
 """
 NAME_VECTORS_SQL = "SELECT spelling, embedding::real[] AS vector FROM name_vectors"
+GRAVE_SQL = """
+    SELECT id, section, row_label, stone_number
+      FROM grave
+     WHERE section = %s AND row_label = %s AND stone_number = %s
+"""
+GRAVE_PERSONS_SQL = "SELECT * FROM person WHERE grave_id = %s ORDER BY id"
+GRAVE_PHOTOS_SQL = """
+    SELECT kind, cloudinary_public_id, width, height, sort_order
+      FROM photo
+     WHERE grave_id = %s
+     ORDER BY kind = 'main' DESC, sort_order, cloudinary_public_id
+"""
 
 
 # ═════════════════════════════════════════════════════════════════════════════
@@ -152,40 +164,35 @@ def fetch_name_vectors(conn: psycopg.Connection) -> dict[str, np.ndarray]:
     return {row["spelling"]: np.asarray(row["vector"], dtype=np.float32)
             for row in conn.execute(NAME_VECTORS_SQL)}
 
+
 def fetch_grave_record(conn: psycopg.Connection, ref: str) -> dict | None:
-    """Return the grave, its people, and its photos by reference (e.g., W-12-4)."""
-    parts = ref.split('-')
-    if len(parts) != 3 or parts[0] not in SECTION_LETTERS.values():
+    """Return one grave with its people and photos, found by its reference.
+
+    Args:
+        conn: an open connection from `connect()`.
+        ref: the grave's reference, as `grave_ref` writes it (e.g. "W-12-4").
+
+    Returns:
+        A dictionary with the reference, section, row, stone, `persons` (every
+        column of each person on the stone; empty for a photo-only stone) and
+        `photos` (main photo first, then in display order), or None when the
+        reference is malformed or names no grave.
+    """
+    # Row labels hold no hyphens, so a valid reference has exactly three parts.
+    parts = ref.split("-")
+    if len(parts) != 3:
         return None
-    section = next((k for k, v in SECTION_LETTERS.items() if v == parts[0]), None)
-    try:
-        stone_number = int(parts[2])
-    except ValueError:
+    letter, row_label, stone_text = parts
+    sections = {code: section for section, code in SECTION_LETTERS.items()}
+    if letter not in sections or not (stone_text.isascii() and stone_text.isdigit()):
         return None
 
-    grave = conn.execute(
-        "SELECT id, section, row_label, stone_number FROM grave WHERE section = %s AND row_label = %s AND stone_number = %s",
-        (section, parts[1], stone_number)
-    ).fetchone()
-
-    if not grave:
+    grave = conn.execute(GRAVE_SQL, (sections[letter], row_label, int(stone_text))).fetchone()
+    if grave is None:
         return None
-
-    persons = conn.execute(
-        "SELECT * FROM person WHERE grave_id = %s ORDER BY id",
-        (grave["id"],)
-    ).fetchall()
-
-    photos = conn.execute(
-        "SELECT kind, cloudinary_public_id, width, height, sort_order FROM photo WHERE grave_id = %s ORDER BY kind = 'main' DESC, sort_order",
-        (grave["id"],)
-    ).fetchall()
-
-    return {
-        "ref": ref,
-        "section": grave["section"],
-        "row": grave["row_label"],
-        "stone": grave["stone_number"],
-        "persons": [dict(p) for p in persons],
-        "photos": [dict(p) for p in photos]
-    }
+    persons = conn.execute(GRAVE_PERSONS_SQL, (grave["id"],)).fetchall()
+    photos = conn.execute(GRAVE_PHOTOS_SQL, (grave["id"],)).fetchall()
+    return {"ref": ref, "section": grave["section"], "row": grave["row_label"],
+            "stone": grave["stone_number"],
+            "persons": [dict(person) for person in persons],
+            "photos": [dict(photo) for photo in photos]}

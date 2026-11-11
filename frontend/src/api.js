@@ -13,6 +13,8 @@ import { searchParamsFor } from './searchFilters.js';
 const API_URL = (import.meta.env.VITE_API_URL || '').replace(/\/+$/, '');
 
 const SEARCH_FAILED = 'The search could not be completed. Please try again.';
+const RECORD_FAILED = 'The record could not be loaded. Please try again.';
+const RECORD_NOT_FOUND = 'This grave record was not found.';
 
 /**
  * Searches the archive by name, keeping only the people who pass the filters.
@@ -49,8 +51,28 @@ export async function searchArchive(query, filters, signal) {
     throw new Error(SEARCH_FAILED, { cause: err });
   }
 }
+
+/**
+ * Fetches one grave, with its people and photos, by its reference.
+ *
+ * @param {string} ref The grave's reference, e.g. "W-12-4".
+ * @returns {Promise<object>} The grave: ref, section, row, stone, persons
+ *   (every column of each person on the stone) and photos (main photo first).
+ * @throws {Error} When the API cannot be reached, knows no such grave or does
+ *   not answer with JSON.
+ */
 export async function getRecord(ref) {
-  const response = await fetch(`${API_URL}/api/graves/${encodeURIComponent(ref)}`);
-  if (!response.ok) throw new Error('Grave record not found.');
-  return await response.json();
+  let response;
+  try {
+    response = await fetch(`${API_URL}/api/graves/${encodeURIComponent(ref)}`);
+  } catch (err) {
+    throw new Error(RECORD_FAILED, { cause: err });
+  }
+  if (response.status === 404) throw new Error(RECORD_NOT_FOUND);
+  if (!response.ok) throw new Error(RECORD_FAILED);
+  try {
+    return await response.json();
+  } catch (err) {
+    throw new Error(RECORD_FAILED, { cause: err });
+  }
 }

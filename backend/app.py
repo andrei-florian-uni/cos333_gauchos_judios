@@ -151,7 +151,6 @@ def search_route():
     return jsonify({"results": current_app.config["SEARCH_INDEX"].search(query, keep=keep)})
 
 
-
 def grave_route(ref):
     """GET /api/graves/<ref>: the full grave record including people and photos."""
     with db.connect() as conn:

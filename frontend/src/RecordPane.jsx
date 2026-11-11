@@ -1,27 +1,42 @@
 /**
- * Gravestone Record View (N8): A detail panel showing a person's names, dates,
+ * Gravestone Record View (N8): a detail panel showing a person's names, dates,
  * age at death, relatives, and epitaph in Spanish and Hebrew, alongside photos.
+ *
+ * Every grave uses the same layout, and a field with no value on record is
+ * shown as "not on record" (Project Design › Application Interface). The photo
+ * tiles and the Share button are placeholders until Cloudinary and shared
+ * links (N5) are in place.
  */
 
 import { useState } from 'react';
 import { Button, Collapse } from 'react-bootstrap';
+import { formatCivilDate, formatHebrewDate, hasValue } from './recordDates.js';
 
 /**
  * Joins the non-empty parts of a name with spaces.
+ *
+ * @param {...?string} parts Name parts, any of which may be null.
+ * @returns {string} The joined name, or an empty string.
  */
 function joinName(...parts) {
   return parts.filter(Boolean).join(' ');
 }
 
 /**
- * Renders a data field row for the Additional Details section.
- * If the value is missing, it displays as redacted.
+ * One labelled field of the Additional details section. A missing value is
+ * shown as redacted ("not on record"); zero is a value and is shown.
+ *
+ * @param {object} props
+ * @param {string} props.label The field's name.
+ * @param {?(string|number)} props.value The field's value, or null.
+ * @param {boolean} [props.isHebrew] Whether the value is Hebrew, set right to left.
+ * @returns {JSX.Element} The label and its value.
  */
 function DetailField({ label, value, isHebrew = false }) {
   return (
     <div className="mb-2">
       <div className="fw-semibold small text-muted mb-1">{label}</div>
-      {value ? (
+      {hasValue(value) ? (
         <div dir={isHebrew ? 'rtl' : 'ltr'} lang={isHebrew ? 'he' : 'es'}>
           {value}
         </div>
@@ -35,11 +50,13 @@ function DetailField({ label, value, isHebrew = false }) {
 }
 
 /**
- * The floating record pane.
- * 
+ * The record pane beside the results list.
+ *
  * @param {object} props
- * @param {object} props.record The full grave record from the API.
- * @param {function(): void} props.onClose Closes the pane and clears selection.
+ * @param {object} props.record The grave from /api/graves/<ref> (ref, section,
+ *   row, stone, photos), merged with the columns of the person selected on it.
+ * @param {function(): void} props.onClose Closes the pane and clears the selection.
+ * @returns {JSX.Element} The record pane.
  */
 function RecordPane({ record, onClose }) {
   const [detailsOpen, setDetailsOpen] = useState(false);
@@ -47,6 +64,11 @@ function RecordPane({ record, onClose }) {
   const latinName = joinName(record.name_es, record.surname_es);
   const hebrewName = joinName(record.name_he, record.surname_he);
   const sectionLabel = record.section.charAt(0).toUpperCase() + record.section.slice(1);
+  const birthDate = formatCivilDate(record.birth_day, record.birth_month, record.birth_year);
+  const deathDate = formatCivilDate(record.death_day, record.death_month, record.death_year);
+  const hebrewDeathDate = formatHebrewDate(
+    record.death_day_he, record.death_month_he, record.death_year_he,
+  );
 
   return (
     <div className="record-pane shadow rounded bg-white p-3 d-flex flex-column h-100">
@@ -69,7 +91,7 @@ function RecordPane({ record, onClose }) {
       <div className="d-flex justify-content-between align-items-start mb-3">
         {/* Placeholder for portrait */}
         <div className="bg-light border rounded" style={{ width: '60px', height: '80px', flexShrink: 0 }}></div>
-        
+
         <div className="ms-3 flex-grow-1">
           <div className="d-flex justify-content-between w-100">
             <h3 className="h5 fw-bold mb-1">{latinName || 'Unidentified'}</h3>
@@ -82,12 +104,12 @@ function RecordPane({ record, onClose }) {
         </div>
       </div>
 
-      {/* Photos Placeholder */}
+      {/* Photos Placeholder: one empty tile per photo until Cloudinary is set up */}
       <div className="d-flex gap-2 mb-4 overflow-auto pb-2">
-        {record.photos.map((photo, i) => (
-          <div 
-            key={i} 
-            className="bg-light border rounded flex-shrink-0" 
+        {record.photos.map((photo) => (
+          <div
+            key={photo.cloudinary_public_id}
+            className="bg-light border rounded flex-shrink-0"
             style={{ width: '120px', height: '120px', cursor: 'pointer' }}
             title="Click to open lightbox (Mock)"
           ></div>
@@ -96,32 +118,32 @@ function RecordPane({ record, onClose }) {
 
       {/* Additional Details Accordion */}
       <div className="mt-auto">
-        <Button 
-          variant="link" 
+        <Button
+          variant="link"
           className="p-0 text-decoration-none text-dark fw-semibold mb-3 d-flex align-items-center gap-2"
           onClick={() => setDetailsOpen(!detailsOpen)}
           aria-controls="additional-details-collapse"
           aria-expanded={detailsOpen}
         >
-          Additional details 
+          Additional details
           <span style={{ transform: detailsOpen ? 'rotate(180deg)' : 'none', transition: 'transform 0.2s', display: 'inline-block' }}>
             &#9662;
           </span>
         </Button>
-        
+
         <Collapse in={detailsOpen}>
           <div id="additional-details-collapse" className="pt-2 border-top">
             <div className="d-flex gap-4 mb-3">
               <div className="flex-grow-1">
-                <DetailField label="Birth date" value={record.birth_year ? record.birth_year : null} />
+                <DetailField label="Birth date" value={birthDate} />
                 <DetailField label="Age at death" value={record.age_of_death} />
               </div>
               <div className="flex-grow-1">
-                <DetailField label="Date of death" value={record.death_year} />
+                <DetailField label="Date of death" value={deathDate} />
                 <DetailField label="Location (fixed)" value={`Row ${record.row} · Position ${record.stone}`} />
               </div>
               <div className="flex-grow-1">
-                <DetailField label="Hebrew date of death" value={record.death_year_he} />
+                <DetailField label="Hebrew date of death" value={hebrewDeathDate} />
               </div>
             </div>
 
