@@ -5,6 +5,7 @@ flask-cors==6.0.5
 gunicorn==26.2.0
 numpy==2.5.4
 psycopg[binary]==3.3.6
+pyluach==2.3.0
 python-dotenv==1.2.4
 safetensors==0.8.0
 

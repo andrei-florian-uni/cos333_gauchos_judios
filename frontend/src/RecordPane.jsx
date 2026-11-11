@@ -3,14 +3,21 @@
  * age at death, relatives, and epitaph in Spanish and Hebrew, alongside photos.
  *
  * Every grave uses the same layout, and a field with no value on record is
- * shown as "not on record" (Project Design › Application Interface). The photo
- * tiles and the Share button are placeholders until Cloudinary and shared
- * links (N5) are in place.
+ * shown as "not on record" (Project Design › Application Interface). A date
+ * worked out rather than carved is shown as a range, with a note saying where
+ * it comes from. The photo tiles and the Share button are placeholders until
+ * Cloudinary and shared links (N5) are in place.
  */
 
 import { useState } from 'react';
 import { Button, Collapse } from 'react-bootstrap';
-import { formatCivilDate, formatHebrewDate, hasValue } from './recordDates.js';
+import { formatHebrewDate, formatPersonDate, hasValue, isDerivedDate } from './recordDates.js';
+
+/** The note under a derived date, saying where it comes from. */
+const DERIVED_NOTES = {
+  death: 'worked out from the Hebrew date',
+  birth: 'estimated from the age at death',
+};
 
 /**
  * Joins the non-empty parts of a name with spaces.
@@ -30,16 +37,21 @@ function joinName(...parts) {
  * @param {string} props.label The field's name.
  * @param {?(string|number)} props.value The field's value, or null.
  * @param {boolean} [props.isHebrew] Whether the value is Hebrew, set right to left.
+ * @param {?string} [props.note] A remark shown in small type under the value,
+ *   e.g. where a derived date comes from.
  * @returns {JSX.Element} The label and its value.
  */
-function DetailField({ label, value, isHebrew = false }) {
+function DetailField({ label, value, isHebrew = false, note = null }) {
   return (
     <div className="mb-2">
       <div className="fw-semibold small text-muted mb-1">{label}</div>
       {hasValue(value) ? (
-        <div dir={isHebrew ? 'rtl' : 'ltr'} lang={isHebrew ? 'he' : 'es'}>
-          {value}
-        </div>
+        <>
+          <div dir={isHebrew ? 'rtl' : 'ltr'} lang={isHebrew ? 'he' : 'es'}>
+            {value}
+          </div>
+          {note && <div className="small text-muted">{note}</div>}
+        </>
       ) : (
         <span className="badge bg-light text-secondary border border-secondary-subtle">
           not on record
@@ -64,8 +76,10 @@ function RecordPane({ record, onClose }) {
   const latinName = joinName(record.name_es, record.surname_es);
   const hebrewName = joinName(record.name_he, record.surname_he);
   const sectionLabel = record.section.charAt(0).toUpperCase() + record.section.slice(1);
-  const birthDate = formatCivilDate(record.birth_day, record.birth_month, record.birth_year);
-  const deathDate = formatCivilDate(record.death_day, record.death_month, record.death_year);
+  const birthDate = formatPersonDate(record, 'birth');
+  const deathDate = formatPersonDate(record, 'death');
+  const birthNote = isDerivedDate(record, 'birth') ? DERIVED_NOTES.birth : null;
+  const deathNote = isDerivedDate(record, 'death') ? DERIVED_NOTES.death : null;
   const hebrewDeathDate = formatHebrewDate(
     record.death_day_he, record.death_month_he, record.death_year_he,
   );
@@ -135,11 +149,11 @@ function RecordPane({ record, onClose }) {
           <div id="additional-details-collapse" className="pt-2 border-top">
             <div className="d-flex gap-4 mb-3">
               <div className="flex-grow-1">
-                <DetailField label="Birth date" value={birthDate} />
+                <DetailField label="Birth date" value={birthDate} note={birthNote} />
                 <DetailField label="Age at death" value={record.age_of_death} />
               </div>
               <div className="flex-grow-1">
-                <DetailField label="Date of death" value={deathDate} />
+                <DetailField label="Date of death" value={deathDate} note={deathNote} />
                 <DetailField label="Location (fixed)" value={`Row ${record.row} · Position ${record.stone}`} />
               </div>
               <div className="flex-grow-1">

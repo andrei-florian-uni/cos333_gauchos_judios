@@ -1,24 +1,36 @@
 /**
  * Explore page (/explore): a name search box with filters, the list of
- * matching people, and the record pane (N8) of the person selected in it.
+ * people, and the record pane (N8) of the person selected in it.
+ *
+ * On arrival the page loads every grave once from /api/map/graves, the
+ * request the cemetery map will use too, and lists everyone in cemetery order
+ * (sections women, children, men; rows in natural order; stones by number).
+ * The filters alone narrow that list, here in the browser. A name search asks
+ * /api/search for every match, best first, filtered by the API. Either list
+ * shows PAGE_SIZE people at first, and "Show more" adds PAGE_SIZE at a time.
  *
  * The search lives in the URL (?q=…, plus any filters, such as
  * &death_from=1920&section=women), so a search from the landing page, a shared
- * link and the browser's Back button all show the right results. The filters
- * narrow a name search: the API finds no one for a search without a name.
- * Clicking a result loads its grave from /api/graves/<ref> and opens the
- * record pane beside the list. The cemetery map is not part of this page yet.
+ * link and the browser's Back button all show the right list; clearing the
+ * name returns to everyone. Clicking a row loads its grave from
+ * /api/graves/<ref> and opens the record pane beside the list. The cemetery
+ * map is not part of this page yet.
  */
 
 import { useState, useEffect, useMemo, useRef } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { Container, Table, Spinner, Alert, Form, Button, Row, Col } from 'react-bootstrap';
-import { searchArchive, getRecord } from './api.js';
+import { getMapGraves, getRecord, searchArchive } from './api.js';
 import FiltersMenu from './FiltersMenu.jsx';
 import RecordPane from './RecordPane.jsx';
+import { describeYears } from './recordDates.js';
 import {
-  NO_FILTERS, clearFilters, describeFilters, hasFilters, readFilters, searchParamsFor,
+  NO_FILTERS, clearFilters, describeFilters, hasFilters, passesFilters, readFilters,
+  searchParamsFor,
 } from './searchFilters.js';
+
+/** How many people a list shows at first, and how many more each "Show more" adds. */
+const PAGE_SIZE = 50;
 
 /**
  * Joins the non-empty parts of a name with spaces.
@@ -42,16 +54,23 @@ function describeGrave(person) {
 }
 
 /**
- * Formats the years of birth and death, e.g. "1890–1959" or "d. 1959".
+ * Lists the people of every grave, in the graves' order, each as a row of the
+ * results list: the person's names and years with the grave's reference,
+ * section, row, stone and photo. Photo-only stones hold no people, so they
+ * add no rows.
  *
- * @param {object} person A search result with birth_year and death_year.
- * @returns {string} The years, or a dash when neither is known.
+ * @param {Array<object>} graves The graves from /api/map/graves.
+ * @returns {Array<object>} One row per person, in cemetery order.
  */
-function describeYears(person) {
-  if (person.birth_year && person.death_year) return `${person.birth_year}–${person.death_year}`;
-  if (person.death_year) return `d. ${person.death_year}`;
-  if (person.birth_year) return `b. ${person.birth_year}`;
-  return '—';
+function listPeople(graves) {
+  return graves.flatMap((grave) => grave.persons.map((person) => ({
+    ...person,
+    ref: grave.ref,
+    section: grave.section,
+    row: grave.row,
+    stone: grave.stone,
+    photo: grave.photo,
+  })));
 }
 
 /**
@@ -131,8 +150,8 @@ function SearchForm({ initialQuery, filters, onSearch }) {
 }
 
 /**
- * Renders the search box, the results of the query in the URL and, once a
- * result is clicked, the record pane beside them.
+ * Renders the search box, the list (everyone, or the results of the name in
+ * the URL) and, once a row is clicked, the record pane beside it.
  *
  * @returns {JSX.Element} The explore page.
  */
@@ -146,6 +165,13 @@ function ExplorePage() {
   const filtersSet = hasFilters(filters);
   // The whole search (name and filters) as one string, e.g. "q=Eva&section=women".
   const searchString = searchParamsFor(urlQuery, filters).toString();
+
+  // Everyone in the archive, loaded once from /api/map/graves. `archiveAttempt`
+  // counts the loads asked for, so "Try again" after a failure loads again;
+  // `archive.attempt` is the load whose outcome it holds.
+  const [archiveAttempt, setArchiveAttempt] = useState(0);
+  const [archive, setArchive] = useState({ attempt: -1, people: [], error: null });
+  const archiveLoading = archive.attempt !== archiveAttempt;
 
   // `attempt` counts submissions, so that submitting the same search again
   // (after an error, say) runs the search again.
@@ -167,6 +193,20 @@ function ExplorePage() {
   const searchKey = urlQuery ? `${attempt}:${searchString}` : '';
   const isLoading = searchKey !== '' && finished.key !== searchKey;
   const shown = !isLoading && searchKey !== '' ? finished : { results: [], error: null };
+
+  // Load everyone when the page opens, and again on "Try again". A load still
+  // running when the page closes is cancelled.
+  useEffect(() => {
+    const controller = new AbortController();
+    getMapGraves(controller.signal)
+      .then((graves) => setArchive({ attempt: archiveAttempt, people: listPeople(graves), error: null }))
+      .catch((err) => {
+        if (!controller.signal.aborted) {
+          setArchive({ attempt: archiveAttempt, people: [], error: err.message });
+        }
+      });
+    return () => controller.abort();
+  }, [archiveAttempt]);
 
   // Run the search whenever the query, the filters or the attempt change. A
   // search that a newer one overtakes is cancelled, so stale results never show.
@@ -238,7 +278,24 @@ function ExplorePage() {
       });
   };
 
-  const count = shown.results.length;
+  // The list: the name search's results, best first, or everyone who passes
+  // the filters, in cemetery order.
+  const isNameSearch = urlQuery !== '';
+  const everyoneFiltered = useMemo(
+    () => archive.people.filter((person) => passesFilters(person, filters)),
+    [archive.people, filters],
+  );
+  const rows = isNameSearch ? shown.results : everyoneFiltered;
+  const listLoading = isNameSearch ? isLoading : archiveLoading;
+  const listError = isNameSearch ? shown.error : archive.error;
+  const count = rows.length;
+
+  // How many rows are shown: PAGE_SIZE for each new list, PAGE_SIZE more after
+  // each "Show more". The count belongs to the list it was raised for, so a
+  // new search or a change of filters starts again from PAGE_SIZE.
+  const listKey = isNameSearch ? searchKey : `everyone:${searchString}`;
+  const [visible, setVisible] = useState({ key: '', count: PAGE_SIZE });
+  const visibleCount = visible.key === listKey ? visible.count : PAGE_SIZE;
 
   return (
     <Container className="py-5 mt-5">
@@ -249,32 +306,32 @@ function ExplorePage() {
         </Col>
       </Row>
 
-      {/* Filters but no name */}
-      {!urlQuery && filtersSet && (
-        <Alert variant="info" role="status">
-          Type a name to search. The filters narrow a name search; they cannot list records on their own yet.
-        </Alert>
-      )}
-
       {/* Loading State */}
-      {isLoading && (
+      {listLoading && (
         <div className="text-center py-5" role="status">
           <Spinner animation="border" variant="success" />
-          <p className="mt-2 text-muted">Searching archive...</p>
+          <p className="mt-2 text-muted">{isNameSearch ? 'Searching archive...' : 'Loading the archive...'}</p>
         </div>
       )}
 
-      {/* Error State */}
-      {shown.error && (
+      {/* Error State; the full list can be loaded again */}
+      {!listLoading && listError && (
         <Alert variant="danger">
-          {shown.error}
+          {listError}
+          {!isNameSearch && (
+            <Button variant="link" className="p-0 ms-2 align-baseline" onClick={() => setArchiveAttempt((n) => n + 1)}>
+              Try again
+            </Button>
+          )}
         </Alert>
       )}
 
-      {/* Results State */}
-      {!isLoading && !shown.error && urlQuery && shown.results.length === 0 && (
+      {/* Nobody to list */}
+      {!listLoading && !listError && count === 0 && (isNameSearch || filtersSet) && (
         <Alert variant="info" role="status">
-          No people found matching "{urlQuery}"{filtersSet ? ' with these filters' : ''}.
+          {isNameSearch
+            ? `No people found matching "${urlQuery}"${filtersSet ? ' with these filters' : ''}.`
+            : 'No people match these filters.'}
           {filtersSet && (
             <Button variant="link" className="p-0 ms-2 align-baseline" onClick={() => handleSearch(urlQuery, NO_FILTERS)}>
               Clear filters
@@ -286,13 +343,15 @@ function ExplorePage() {
       {/* Results list, narrowed to make room for the record pane when one is open */}
       <div className="d-flex align-items-start gap-4 position-relative">
         <div className="flex-grow-1" style={{ maxWidth: paneOpen ? '55%' : '100%', transition: 'max-width 0.3s ease' }}>
-          {count > 0 && (
+          {!listLoading && count > 0 && (
             <p className="text-muted small mb-2" role="status">
-              {count} {count === 1 ? 'result' : 'results'} · best match first
+              {isNameSearch
+                ? `${count} ${count === 1 ? 'result' : 'results'} · best match first`
+                : `${count} ${count === 1 ? 'person' : 'people'} · in cemetery order`}
             </p>
           )}
 
-          {count > 0 && (
+          {!listLoading && count > 0 && (
             <div className="table-responsive shadow-sm rounded">
               <Table hover className="align-middle mb-0 bg-white">
                 <thead className="bg-light">
@@ -301,11 +360,11 @@ function ExplorePage() {
                     <th>Hebrew Name</th>
                     <th>Grave</th>
                     <th>Years</th>
-                    <th>Score</th>
+                    {isNameSearch && <th>Score</th>}
                   </tr>
                 </thead>
                 <tbody>
-                  {shown.results.map((person) => {
+                  {rows.slice(0, visibleCount).map((person) => {
                     const latin = joinName(person.name_es, person.surname_es);
                     const hebrew = joinName(person.name_he, person.surname_he);
                     const isSelected = selectedRecord?.person_id === person.person_id;
@@ -324,12 +383,27 @@ function ExplorePage() {
                           <div className="text-muted small">{person.ref}</div>
                         </td>
                         <td>{describeYears(person)}</td>
-                        <td><span className="badge bg-secondary">{person.score.toFixed(2)}</span></td>
+                        {isNameSearch && (
+                          <td><span className="badge bg-secondary">{person.score.toFixed(2)}</span></td>
+                        )}
                       </tr>
                     );
                   })}
                 </tbody>
               </Table>
+            </div>
+          )}
+
+          {/* Show more: the next PAGE_SIZE rows of the same list */}
+          {!listLoading && count > visibleCount && (
+            <div className="d-flex justify-content-between align-items-center mt-3">
+              <span className="text-muted small">Showing {visibleCount} of {count}</span>
+              <Button
+                variant="outline-secondary"
+                onClick={() => setVisible({ key: listKey, count: visibleCount + PAGE_SIZE })}
+              >
+                Show more
+              </Button>
             </div>
           )}
         </div>

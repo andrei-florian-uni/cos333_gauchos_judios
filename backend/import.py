@@ -11,7 +11,10 @@ one transaction, so a run that fails leaves the database as it was:
 3. upserts one `grave` per stone, keyed on its section, row label and stone
    number, and one `person` per named person (a stone with no name gets no
    person row: it is a photo-only record), splitting each Hebrew date of death
-   into day, month and year;
+   into day, month and year. Where the stone carves no civil date, it works
+   out a range for the date of death from the Hebrew date, and for the birth
+   date from the age at death (`date_ranges.py`), so every load stores carved
+   and derived dates together;
 4. loads photos and placements when their files are given (`--photos`,
    `--placements`), and removes rows the inputs no longer hold. A load that
    would delete more than 2% of the people, graves or photos stops unless
@@ -45,6 +48,7 @@ from pathlib import Path
 import psycopg
 
 import db
+from date_ranges import UPPER_COLUMNS, derive_ranges, has_civil_date
 from hebrew_dates import parse_hebrew_date
 from search import collect_names, load_encoder, read_dictionary
 
@@ -74,7 +78,7 @@ CSV_COLUMNS = {"section", "row", "stone", "death_date_he", *TEXT_COLUMNS, *NUMBE
 PHOTO_COLUMNS = {"section", "row", "stone", "kind", "public_id", "width", "height", "sort_order"}
 NAME_FIELDS = ("name_es", "surname_es", "name_he", "surname_he")    # a person needs one of these
 PERSON_COLUMNS = ("id", "grave_id", *TEXT_COLUMNS.values(), *NUMBER_COLUMNS,
-                  "death_day_he", "death_month_he", "death_year_he", "notes")
+                  "death_day_he", "death_month_he", "death_year_he", "notes", *UPPER_COLUMNS)
 PERSON_UPSERT = (f"INSERT INTO person ({', '.join(PERSON_COLUMNS)}) "
                  f"VALUES ({', '.join(['%s'] * len(PERSON_COLUMNS))}) "
                  "ON CONFLICT (id) DO UPDATE SET "
@@ -111,6 +115,8 @@ class Archive:
     errors: list[str] = field(default_factory=list)
     warnings: list[str] = field(default_factory=list)
     partial_hebrew_dates: int = 0
+    derived_deaths: int = 0             # dates of death worked out from the Hebrew date
+    derived_births: int = 0             # birth dates estimated from the age at death
 
 
 # ═════════════════════════════════════════════════════════════════════════════
@@ -187,6 +193,8 @@ def read_person(row: dict, where: str, archive: Archive) -> dict | None:
 
     The Hebrew date of death is split into day, month and year, and its
     carved text is kept in `notes`, so that a misread can be found and fixed.
+    A date the stone does not carve in civil form is then worked out where it
+    can be (`date_ranges.derive_ranges`); every other upper column is empty.
     """
     person = {column: text_or_none(row.get(source)) for source, column in TEXT_COLUMNS.items()}
     if not any(person[name] for name in NAME_FIELDS):
@@ -201,6 +209,15 @@ def read_person(row: dict, where: str, archive: Archive) -> dict | None:
     person["notes"] = f"Hebrew date of death as carved: {carved}" if carved else None
     if carved and not date.complete:
         archive.partial_hebrew_dates += 1
+
+    derived = derive_ranges(person)
+    person |= dict.fromkeys(UPPER_COLUMNS) | derived
+    archive.derived_deaths += "death_year_upper" in derived
+    archive.derived_births += "birth_year_upper" in derived
+    if date.year is not None and not has_civil_date(person, "death"):
+        # A Hebrew year with no civil date, yet no range: the calendar rules the day out
+        archive.warnings.append(f"{where}: no day of {date.year} matches the Hebrew date "
+                                f"of death {carved!r}, so no civil date was worked out")
     return person
 
 
@@ -600,7 +617,9 @@ def print_report(archive: Archive, counts: dict, dry_run: bool) -> None:
     print("─" * 72)
     print("  Archive load" + ("  (dry run: rolled back)" if dry_run else ""))
     print("─" * 72)
-    counts = counts | {"Hebrew dates not fully read": archive.partial_hebrew_dates}
+    counts = counts | {"Hebrew dates not fully read": archive.partial_hebrew_dates,
+                       "deaths from the Hebrew date": archive.derived_deaths,
+                       "births from the age at death": archive.derived_births}
     for label, value in counts.items():
         print(f"  {label:<30}{value}")
     for warning in archive.warnings:

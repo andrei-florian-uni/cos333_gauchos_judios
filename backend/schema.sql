@@ -1,8 +1,9 @@
 -- The archive's five MVP tables (Project Design › Application Data Structure).
 --
 -- import.py runs this file before every load. Every statement is safe to run
--- again: tables and types are created only when missing. A database filled to
--- the earlier schema is cleared first with `python backend/import.py --rebuild`.
+-- again: tables, types, columns and checks are created only when missing. A
+-- database filled to the earlier schema is cleared first with
+-- `python backend/import.py --rebuild`.
 
 CREATE EXTENSION IF NOT EXISTS vector;          -- pgvector, for name_vectors.embedding
 
@@ -42,6 +43,13 @@ CREATE TABLE IF NOT EXISTS grave (
 -- One person commemorated on a stone. Dates are stored in parts, so that a
 -- partial date leaves the missing parts empty. Hebrew months are numbered as
 -- pyluach numbers them: 1 Nisan … 7 Tishrei … 12 Adar (Adar I), 13 Adar II.
+--
+-- Where the stone carves no civil date, import.py works one out (see
+-- date_ranges.py): a date of death from the Hebrew one, and a birth date from
+-- the age at death. A derived date is a range of days: its earliest day fills
+-- the date's own three columns and its latest the three `_upper` columns. An
+-- upper column holds a value exactly when the date was worked out; a carved
+-- date, however partial, leaves all three empty.
 CREATE TABLE IF NOT EXISTS person (
     id              uuid PRIMARY KEY DEFAULT gen_random_uuid(),
     grave_id        uuid NOT NULL REFERENCES grave (id) ON DELETE CASCADE,
@@ -67,9 +75,55 @@ CREATE TABLE IF NOT EXISTS person (
     age_of_death    smallint CHECK (age_of_death BETWEEN 0 AND 130),
     epitaph         text,                       -- the inscription, in both languages
     notes           text,
-    confidence      smallint CHECK (confidence BETWEEN 0 AND 100)   -- OCR confidence, %
+    confidence      smallint CHECK (confidence BETWEEN 0 AND 100),  -- OCR confidence, %
+    birth_day_upper   smallint CHECK (birth_day_upper BETWEEN 1 AND 31),
+    birth_month_upper smallint CHECK (birth_month_upper BETWEEN 1 AND 12),
+    birth_year_upper  smallint CHECK (birth_year_upper BETWEEN 1800 AND 2100),
+    death_day_upper   smallint CHECK (death_day_upper BETWEEN 1 AND 31),
+    death_month_upper smallint CHECK (death_month_upper BETWEEN 1 AND 12),
+    death_year_upper  smallint CHECK (death_year_upper BETWEEN 1850 AND 2100),
+    -- A derived date has all six parts; a carved one has no upper part.
+    CONSTRAINT person_birth_upper CHECK (
+        num_nonnulls(birth_day_upper, birth_month_upper, birth_year_upper) = 0
+        OR num_nonnulls(birth_day, birth_month, birth_year,
+                        birth_day_upper, birth_month_upper, birth_year_upper) = 6),
+    CONSTRAINT person_death_upper CHECK (
+        num_nonnulls(death_day_upper, death_month_upper, death_year_upper) = 0
+        OR num_nonnulls(death_day, death_month, death_year,
+                        death_day_upper, death_month_upper, death_year_upper) = 6)
 );
 CREATE INDEX IF NOT EXISTS person_grave_id ON person (grave_id);
+
+-- The six upper columns and their checks, added to a person table created
+-- before 11 November 2026 without them. On a table created above, which has
+-- them already, these statements change nothing.
+ALTER TABLE person
+    ADD COLUMN IF NOT EXISTS birth_day_upper   smallint CHECK (birth_day_upper BETWEEN 1 AND 31),
+    ADD COLUMN IF NOT EXISTS birth_month_upper smallint CHECK (birth_month_upper BETWEEN 1 AND 12),
+    ADD COLUMN IF NOT EXISTS birth_year_upper  smallint CHECK (birth_year_upper BETWEEN 1800 AND 2100),
+    ADD COLUMN IF NOT EXISTS death_day_upper   smallint CHECK (death_day_upper BETWEEN 1 AND 31),
+    ADD COLUMN IF NOT EXISTS death_month_upper smallint CHECK (death_month_upper BETWEEN 1 AND 12),
+    ADD COLUMN IF NOT EXISTS death_year_upper  smallint CHECK (death_year_upper BETWEEN 1850 AND 2100);
+
+DO $$
+BEGIN
+    ALTER TABLE person ADD CONSTRAINT person_birth_upper CHECK (
+        num_nonnulls(birth_day_upper, birth_month_upper, birth_year_upper) = 0
+        OR num_nonnulls(birth_day, birth_month, birth_year,
+                        birth_day_upper, birth_month_upper, birth_year_upper) = 6);
+EXCEPTION WHEN duplicate_object THEN
+    NULL;                                       -- the check exists already
+END $$;
+
+DO $$
+BEGIN
+    ALTER TABLE person ADD CONSTRAINT person_death_upper CHECK (
+        num_nonnulls(death_day_upper, death_month_upper, death_year_upper) = 0
+        OR num_nonnulls(death_day, death_month, death_year,
+                        death_day_upper, death_month_upper, death_year_upper) = 6);
+EXCEPTION WHEN duplicate_object THEN
+    NULL;                                       -- the check exists already
+END $$;
 
 -- The photographs of a grave, stored on Cloudinary and referenced by public ID.
 CREATE TABLE IF NOT EXISTS photo (

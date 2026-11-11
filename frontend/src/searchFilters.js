@@ -11,18 +11,17 @@
  * In this module the filters are one object with a string for each key of
  * FILTER_KEYS. An empty string means the filter is not set.
  *
- * The design's year-of-birth filter is left out for now (team decision,
- * 2026-11-09). Only 58 of the 703 people have a birth year carved on their
- * stone, so the filter would drop almost everyone. It can return once the API
- * estimates birth years from the age at death. The API already accepts
- * `birth_from` and `birth_to`; this page simply never sends them.
+ * A name search is filtered by the API. The full list, shown before a name is
+ * searched, is filtered here by `passesFilters`, which follows the API's rule:
+ * a date worked out from a Hebrew date or an age at death passes when its
+ * range of years touches the years chosen.
  */
 
 /** The filter parameters, in the order they are written to the URL and the API. */
-export const FILTER_KEYS = ['death_from', 'death_to', 'section', 'row'];
+export const FILTER_KEYS = ['birth_from', 'birth_to', 'death_from', 'death_to', 'section', 'row'];
 
-/** The year filters: the two bounds of the death range, in years, inclusive. */
-const YEAR_KEYS = ['death_from', 'death_to'];
+/** The year filters: the two bounds of each range, in years, inclusive. */
+const YEAR_KEYS = ['birth_from', 'birth_to', 'death_from', 'death_to'];
 
 /** A year as the API accepts it: one to four digits. */
 const YEAR = /^[0-9]{1,4}$/;
@@ -31,9 +30,18 @@ const YEAR = /^[0-9]{1,4}$/;
 export const NO_FILTERS = Object.freeze(Object.fromEntries(FILTER_KEYS.map((key) => [key, ''])));
 
 /**
+ * The two ends of the year-of-birth slider. Carved births run from 1845 to
+ * 1972 and births estimated from the age at death from 1830 to 1955
+ * (November 2026); the slider reaches a little beyond both, so that every
+ * record can be picked. A handle left at its end sets no bound.
+ */
+export const BIRTH_SLIDER = { min: 1820, max: 1980 };
+
+/**
  * The two ends of the year-of-death slider. They reach a little beyond the
- * archive's earliest and latest years of death (1889–2023 in November 2026),
- * so that every record can be picked. A handle left at its end sets no bound.
+ * archive's earliest and latest years of death (1889–2023 in November 2026,
+ * the dates worked out from Hebrew dates included), so that every record can
+ * be picked. A handle left at its end sets no bound.
  */
 export const DEATH_SLIDER = { min: 1880, max: 2030 };
 
@@ -131,6 +139,10 @@ export function describeYearRange(from, to) {
  */
 export function describeFilters(filters) {
   const chips = [];
+  if (filters.birth_from || filters.birth_to) {
+    chips.push({ label: `Born ${describeYearRange(filters.birth_from, filters.birth_to)}`,
+                 keys: ['birth_from', 'birth_to'] });
+  }
   if (filters.death_from || filters.death_to) {
     chips.push({ label: `Died ${describeYearRange(filters.death_from, filters.death_to)}`,
                  keys: ['death_from', 'death_to'] });
@@ -143,4 +155,51 @@ export function describeFilters(filters) {
     chips.push({ label: `Row: ${filters.row}`, keys: ['row'] });
   }
   return chips;
+}
+
+/**
+ * Writes a row label as the archive stores it, as the API does
+ * (backend/db.py › normalise_row_label): the word "row" and all spaces are
+ * dropped and letters are upper-cased, so "Misc row 2" becomes "MISC2".
+ *
+ * @param {string} label A row label as typed.
+ * @returns {string} The stored form of the label.
+ */
+export function normaliseRowLabel(label) {
+  return label.replace(/\brow\b/gi, ' ').replace(/\s+/g, '').toUpperCase();
+}
+
+/**
+ * Tells whether a date's years touch a chosen range of years. A carved year
+ * is a span of one year; a date worked out from a Hebrew date or an age at
+ * death runs from its year to its upper year. This is the API's rule
+ * (backend/app.py › overlaps).
+ *
+ * @param {?number} year The date's year, or null when it is not on record.
+ * @param {?number} upperYear The latest year of a derived date, else null.
+ * @param {string} from The earliest year chosen, or '' for no lower bound.
+ * @param {string} to The latest year chosen, or '' for no upper bound.
+ * @returns {boolean} True if any year of the date lies within the range. A
+ *   date not on record passes only when neither bound is set.
+ */
+export function yearsOverlap(year, upperYear, from, to) {
+  if (!from && !to) return true;
+  if (year === null || year === undefined) return false;
+  const last = upperYear ?? year;
+  return (!from || last >= Number(from)) && (!to || year <= Number(to));
+}
+
+/**
+ * Tells whether a person of the full list passes every filter that is set.
+ *
+ * @param {object} person A person with birth_year, birth_year_upper,
+ *   death_year, death_year_upper, section and row.
+ * @param {object} filters The filters, as returned by readFilters.
+ * @returns {boolean} True if the person passes them all.
+ */
+export function passesFilters(person, filters) {
+  return yearsOverlap(person.birth_year, person.birth_year_upper, filters.birth_from, filters.birth_to)
+    && yearsOverlap(person.death_year, person.death_year_upper, filters.death_from, filters.death_to)
+    && (!filters.section || person.section === filters.section)
+    && (!filters.row || person.row === normaliseRowLabel(filters.row));
 }

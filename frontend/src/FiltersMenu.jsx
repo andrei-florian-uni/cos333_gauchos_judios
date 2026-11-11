@@ -1,8 +1,7 @@
 /**
  * The Filters button of the explore page and the pop-up it opens (wireframe
- * 2.4): a slider for the year of death, a section choice and a row field
- * (Project Design › Application Interface › N2). The design's year-of-birth
- * slider is left out for now; searchFilters.js explains why.
+ * 2.4): sliders for the year of birth and the year of death, a section choice
+ * and a row field (Project Design › Application Interface › N2).
  *
  * The pop-up edits a draft copy of the filters. Nothing changes in the search
  * until "Show results" hands the draft to the page; closing the pop-up any
@@ -16,7 +15,7 @@
 import { useState } from 'react';
 import { Button, CloseButton, Dropdown, Form } from 'react-bootstrap';
 import {
-  DEATH_SLIDER, NO_FILTERS, SECTIONS, describeFilters, describeYearRange,
+  BIRTH_SLIDER, DEATH_SLIDER, NO_FILTERS, SECTIONS, describeFilters, describeYearRange,
 } from './searchFilters.js';
 
 /**
@@ -167,6 +166,14 @@ function FiltersForm({ filters, onApply, onClose }) {
       </div>
 
       <YearRangeSlider
+        label="Year of birth"
+        range={BIRTH_SLIDER}
+        from={draft.birth_from}
+        to={draft.birth_to}
+        onChange={(from, to) => update({ birth_from: from, birth_to: to })}
+      />
+
+      <YearRangeSlider
         label="Year of death"
         range={DEATH_SLIDER}
         from={draft.death_from}
@@ -202,8 +209,9 @@ function FiltersForm({ filters, onApply, onClose }) {
       </Form.Group>
 
       <p className="small text-muted">
-        Left at its full range, the slider means any year. People with no year
-        of death on record drop out once it moves.
+        Left at its full range, a slider means any year. Dates worked out from
+        a Hebrew date or an age at death count when their range touches the
+        years chosen. People with no date on record drop out once a slider moves.
       </p>
 
       <div className="d-flex justify-content-between align-items-center border-top pt-3">
