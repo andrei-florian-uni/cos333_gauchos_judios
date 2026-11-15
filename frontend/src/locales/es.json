@@ -1,0 +1,150 @@
+{
+  "common": {
+    "siteTitle": "Los Gauchos Judíos · Archivo del cementerio",
+    "languageToggle": "Idioma",
+    "searchPlaceholder": "Buscá un nombre..."
+  },
+  "landing": {
+    "hero": {
+      "lead": "Lugar de descanso de las familias judías que trabajaron la tierra en Colonia Lucienville desde 1894. Hoy, 794 de sus tumbas están fotografiadas y se pueden buscar por nombre.",
+      "exploreMap": "Explorar el mapa del cementerio",
+      "learnMore": "Conocé más",
+      "pauseVideo": "Pausar",
+      "playVideo": "Reproducir"
+    },
+    "history": {
+      "colonies": {
+        "heading": "Agricultores judíos en la pampa argentina",
+        "p1": "A fines del siglo XIX, una ola de pogromos recorrió el Imperio ruso y golpeó a la población judía que vivía allí desde hacía siglos. El barón Maurice de Hirsch, un filántropo judío alemán, quiso ayudar a los judíos perseguidos asentándolos como agricultores en el inmenso campo argentino. En 1891 fundó la Jewish Colonization Association (JCA), que se propuso comprar tierras y crear colonias agrícolas para los judíos de Europa del Este.",
+        "p2": "Colonia Lucienville, que lleva el nombre del único hijo del barón, quien murió antes que sus padres, se fundó en 1894 cerca de la estación de tren de Basavilbaso, en Entre Ríos. Las primeras familias llegaron de Jersón y Besarabia, en lo que hoy es el sur de Ucrania y Moldavia. Criaron ganado y cultivaron la tierra, fundaron instituciones comunitarias judías e incluso crearon la primera cooperativa agrícola de la Argentina. Alberto Gerchunoff, destacado escritor argentino que se crió en las colonias judías, acuñó la expresión \"los gauchos judíos\" para describir a los judíos de Europa del Este que se adaptaron a las duras condiciones del trabajo agrícola en la llanura argentina. A lo largo del siglo XX, la mayoría de los descendientes de la comunidad se fue de las colonias y se dispersó por la Argentina y el resto del mundo."
+      },
+      "cemetery": {
+        "p1": "Una de las primeras instituciones que creó la comunidad fue el cementerio judío, fundado en 1895, un año después de la llegada de las primeras familias. El cementerio y la comunidad también se conocen como Novibuco, por Novyi Buh, la ciudad ucraniana de la que venían muchos de los primeros colonos. Con unas 2.500 lápidas, es el cementerio judío más grande de Colonia Lucienville.",
+        "p2": "El cementerio tiene una sección de hombres, una de mujeres y una de niños. En las partes más nuevas las secciones se mezclan un poco, pero la disposición sigue en gran medida esta separación tradicional. Las lápidas tienen inscripciones en español, hebreo e ídish, y guardan registros valiosos que echan luz sobre una comunidad en transición: desde sus raíces en los shtetl de Europa del Este hasta la modernización y la secularización que vinieron después. Hoy, el cementerio está al cuidado de la comunidad judía de Basavilbaso (Asociación Israelita Basavilbaso)."
+      },
+      "project": {
+        "p1": "En enero de 2026, un equipo de estudiantes de Princeton viajó a Basavilbaso con el apoyo del Princeton Institute for International and Regional Studies (PIIRS), el Effron Center y el Departamento de Español y Portugués. En colaboración con cuidadores locales y referentes de la comunidad judía de la Argentina, limpiaron y fotografiaron 794 tumbas, que abarcan las secciones de mujeres y de niños del cementerio.",
+        "p2": "Después, las fotos se ordenaron, se transcribieron con herramientas de IA y se revisaron a mano. Un equipo de estudiantes se formó para convertir los registros en un archivo de acceso público, donde cualquiera puede buscar un nombre en español o en hebreo, o recorrer el mapa aéreo del cementerio. Más adelante, la sección de hombres se va a documentar y sumar al archivo.",
+        "sourcesLink": "Las fuentes están al pie de la página"
+      }
+    },
+    "carousel": {
+      "heading": "Del trabajo de campo",
+      "credit": "Fotos: equipo de Los Gauchos Judíos, enero de 2026",
+      "previous": "Anterior",
+      "next": "Siguiente",
+      "slides": {
+        "entrance": {
+          "title": "La llegada al cementerio",
+          "caption": "El equipo frente al edificio de la entrada, cuyo cartel dice \"Cementerio Israelita fundado en 1895\"."
+        },
+        "aerial": {
+          "title": "El cementerio desde el aire",
+          "caption": "Un muro de ladrillo rodea unas 2.500 lápidas en pleno campo, en las afueras de Basavilbaso."
+        },
+        "stones": {
+          "title": "Rostros y estrellas",
+          "caption": "Muchas lápidas llevan una estrella de David y un retrato esmaltado de la persona que descansa allí."
+        },
+        "cleaning": {
+          "title": "La limpieza de las lápidas",
+          "caption": "Antes de fotografiarlas, el equipo les sacó el liquen y la tierra para que se pudiera leer cada inscripción."
+        },
+        "rowByRow": {
+          "title": "Fila por fila",
+          "caption": "La limpieza de una lápida en la sección de niños. Las piedritas sobre una tumba cercana son el recuerdo que dejó alguien que la visitó."
+        },
+        "interview": {
+          "title": "Contar la historia",
+          "caption": "Uriel Lin, líder del equipo, habla con FM Riel sobre el proyecto."
+        },
+        "station": {
+          "title": "El pueblo alrededor del cual creció la colonia",
+          "caption": "El equipo en la estación de tren de Basavilbaso. Colonia Lucienville se asentó a su alrededor en 1894."
+        },
+        "team": {
+          "title": "El equipo",
+          "caption": "Estudiantes de Princeton con cuidadores locales y miembros de la comunidad que hicieron posible el trabajo."
+        }
+      }
+    },
+    "timeline": {
+      "heading": "De las colonias al archivo",
+      "eraColonies": "Las colonias",
+      "eraProject": "El proyecto",
+      "events": {
+        "pogroms": {
+          "date": "Décadas de 1880 a 1900",
+          "title": "Pogromos en el Imperio ruso",
+          "desc": "La violencia y las nuevas restricciones empujan a muchas familias judías a buscar una vida en otro lugar."
+        },
+        "railway": {
+          "date": "1887",
+          "title": "El ferrocarril llega a Basavilbaso",
+          "desc": "Una nueva estación en la línea de Entre Ríos, alrededor de la cual va a crecer la colonia."
+        },
+        "jca": {
+          "date": "1891",
+          "title": "Se funda la Jewish Colonization Association",
+          "desc": "El barón Maurice de Hirsch, de luto por su hijo Lucien, la funda para asentar a judíos como agricultores en la Argentina."
+        },
+        "lucienville": {
+          "date": "1894",
+          "title": "Se funda Colonia Lucienville",
+          "desc": "Llegan a Basavilbaso familias de Jersón y Besarabia."
+        },
+        "cemetery": {
+          "date": "1895",
+          "title": "Se funda el cementerio",
+          "desc": "Cementerio Israelita, Colonia N.º 1, también conocido como Novibuco."
+        },
+        "cooperative": {
+          "date": "1900",
+          "title": "La primera cooperativa agrícola de la Argentina",
+          "desc": "Los colonos la fundan el 12 de agosto en Basavilbaso."
+        },
+        "fieldwork": {
+          "date": "Enero de 2026",
+          "title": "Trabajo de campo",
+          "desc": "Un equipo de Princeton fotografía 794 tumbas en las secciones de mujeres y de niños."
+        },
+        "building": {
+          "date": "Marzo a diciembre de 2026",
+          "title": "La construcción del archivo",
+          "desc": "Se procesan los registros y se desarrolla el sitio web."
+        },
+        "online": {
+          "date": "Diciembre de 2026",
+          "title": "El archivo se publica en línea",
+          "desc": "Cualquiera puede buscar un nombre y encontrar la tumba en el mapa."
+        },
+        "mensSection": {
+          "date": "Próximamente",
+          "title": "La sección de hombres",
+          "desc": "Un próximo viaje va a documentar el resto del cementerio."
+        }
+      }
+    },
+    "footer": {
+      "sources": "Fuentes",
+      "sourceList": {
+        "amiaBasavilbaso": "AMIA Vaad Hakehilot, \"Asociación Israelita de Basavilbaso\"",
+        "amiaNovibuco": "AMIA Vaad Hakehilot, \"Novibuco\"",
+        "icufCooperative": "ICUF Argentina, \"La primera cooperativa agrícola del país: Lucienville\"",
+        "jewishGen": "JewishGen KehilaLinks, \"Basavilbaso - Lucienville, Argentina\", recopilado por Yehuda Mathov (en inglés)",
+        "wikipediaHirsch": "Wikipedia, \"Maurice de Hirsch\" (en inglés)",
+        "fieldwork": "Trabajo de campo de Los Gauchos Judíos, Basavilbaso, enero de 2026"
+      },
+      "credits": "Créditos",
+      "partnershipLabel": "En colaboración con:",
+      "partnership": "la comunidad judía de Basavilbaso (Asociación Israelita Basavilbaso) y los cuidadores locales del cementerio",
+      "supportLabel": "Con el apoyo de:",
+      "support": "el Princeton Institute for International and Regional Studies (PIIRS), el Effron Center y el Departamento de Español y Portugués",
+      "fieldworkLabel": "Trabajo de campo:",
+      "fieldwork": "equipo de Los Gauchos Judíos, dirigido por Uriel Lin: Andrei Florian, Emily Mitnick, Daniel Levey, Marissa Hirschfield, Eve Shapiro, Florencia Chiaramonte.",
+      "archiveLabel": "Archivo y sitio web:",
+      "contact": "Contactanos",
+      "privacy": "Privacidad"
+    }
+  }
+}
