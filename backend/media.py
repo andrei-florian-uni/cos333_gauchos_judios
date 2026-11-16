@@ -10,8 +10,10 @@ Run it locally from `backend/` with `python media.py`.
 import argparse
 import csv
 import io
+import os
 import re
 from pathlib import Path
+from urllib.parse import urlparse
 
 import cloudinary
 import cloudinary.uploader
@@ -39,9 +41,19 @@ MIME_TYPES = {".jpg", ".jpeg", ".png", ".webp", ".heic", ".heif"}
 def configure_cloudinary() -> None:
     """Load credentials from .env and configure the Cloudinary SDK."""
     load_dotenv(ENV_FILE)
-    # The Cloudinary SDK automatically picks up the CLOUDINARY_URL environment variable.
-    # Setting secure=True ensures HTTPS is used for API calls.
-    cloudinary.config(secure=True)
+    
+    url_str = os.environ.get("CLOUDINARY_URL")
+    if not url_str:
+        raise ValueError("CLOUDINARY_URL not found in .env")
+        
+    parsed_url = urlparse(url_str)
+    
+    cloudinary.config(
+        cloud_name=parsed_url.hostname,
+        api_key=parsed_url.username,
+        api_secret=parsed_url.password,
+        secure=True
+    )
 
 
 def process_image(image_path: Path) -> io.BytesIO:
