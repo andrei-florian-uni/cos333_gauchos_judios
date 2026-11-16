@@ -160,6 +160,17 @@ def grave_route(ref):
     return jsonify(record)
 
 
+def map_graves_route():
+    """GET /api/map/graves: every grave the map draws, with its outline and state.
+
+    Returns:
+        {"image": {...}, "graves": [...]}, as `db.fetch_map` describes it.
+        Graves not yet placed come back with no outline; the map leaves them out.
+    """
+    with db.connect() as conn:
+        return jsonify(db.fetch_map(conn))
+
+
 def health_route():
     """GET /health: whether the service is up, and how many people it can search."""
     return jsonify({"status": "ok",
@@ -194,6 +205,7 @@ def create_app(search_index: SearchIndex | None = None) -> Flask:
                                           else search_index)
     application.add_url_rule("/api/search", view_func=search_route, methods=["GET"])
     application.add_url_rule("/api/graves/<ref>", view_func=grave_route, methods=["GET"])
+    application.add_url_rule("/api/map/graves", view_func=map_graves_route, methods=["GET"])
     application.add_url_rule("/health", view_func=health_route, methods=["GET"])
     application.register_error_handler(InvalidParameter, bad_request)
     application.register_error_handler(500, server_error)

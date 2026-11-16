@@ -54,6 +54,29 @@ GRAVE_PHOTOS_SQL = """
      WHERE grave_id = %s
      ORDER BY kind = 'main' DESC, sort_order, cloudinary_public_id
 """
+CEMETERY_SQL = """
+    SELECT name, aerial_width_px, aerial_height_px, tiles_path
+      FROM cemetery
+     ORDER BY name
+     LIMIT 1
+"""
+# Every grave with what the map draws: its outline, whether it has photos, and
+# the names of its people (as a JSON list, so one query serves every grave).
+MAP_GRAVES_SQL = """
+    SELECT grave.section, grave.row_label, grave.stone_number,
+           grave.centroid_x, grave.centroid_y, grave.outline_px::text AS outline,
+           EXISTS (SELECT 1 FROM photo WHERE photo.grave_id = grave.id) AS has_photos,
+           COALESCE((SELECT json_agg(json_build_object(
+                                'id', person.id::text,
+                                'name_es', person.name_es, 'surname_es', person.surname_es,
+                                'name_he', person.name_he, 'surname_he', person.surname_he)
+                            ORDER BY person.id)
+                       FROM person
+                      WHERE person.grave_id = grave.id), '[]'::json) AS persons
+      FROM grave
+     ORDER BY grave.section, grave.row_label, grave.stone_number
+"""
+NUMBER = re.compile(r"-?[0-9]+(?:\.[0-9]+)?(?:[eE][-+]?[0-9]+)?")   # one coordinate in a polygon
 
 
 # ═════════════════════════════════════════════════════════════════════════════
@@ -196,3 +219,85 @@ def fetch_grave_record(conn: psycopg.Connection, ref: str) -> dict | None:
             "stone": grave["stone_number"],
             "persons": [dict(person) for person in persons],
             "photos": [dict(photo) for photo in photos]}
+
+
+# ═════════════════════════════════════════════════════════════════════════════
+# THE MAP
+# ═════════════════════════════════════════════════════════════════════════════
+def parse_polygon(text: str | None) -> list[list[float]] | None:
+    """Turn a polygon in PostgreSQL's text form into a list of points.
+
+    Args:
+        text: e.g. "((10,20),(30,20),(30,50))", as `outline_px::text` writes it,
+            or None for a grave that has not been placed.
+
+    Returns:
+        The points as [x, y] pairs in pixels of the aerial image, e.g.
+        [[10.0, 20.0], [30.0, 20.0], [30.0, 50.0]], or None when `text` is None.
+    """
+    if text is None:
+        return None
+    numbers = [float(number) for number in NUMBER.findall(text)]
+    # The numbers alternate x, y, x, y, …, so they pair up two at a time.
+    return [[numbers[i], numbers[i + 1]] for i in range(0, len(numbers) - 1, 2)]
+
+
+def map_state(persons: list, has_photos: bool) -> str:
+    """Return a grave's state on the map, derived as the design describes.
+
+    Args:
+        persons: the people on the grave.
+        has_photos: whether the grave has any photo.
+
+    Returns:
+        "documented" when someone is named on it, "incomplete" when it has
+        photos but no one could be read, and "missing" when it has neither.
+    """
+    if persons:
+        return "documented"
+    if has_photos:
+        return "incomplete"
+    return "missing"
+
+
+def map_grave(row: dict) -> dict:
+    """Turn one row of MAP_GRAVES_SQL into what /api/map/graves returns for a grave.
+
+    Args:
+        row: a row with section, row_label, stone_number, centroid_x,
+            centroid_y, outline (polygon text or None), has_photos and persons.
+
+    Returns:
+        The grave's ref, section, row, stone, state, centroid ([x, y] or None),
+        outline (a list of [x, y] or None) and persons (id and the four name
+        columns of each).
+    """
+    centroid = None
+    if row["centroid_x"] is not None and row["centroid_y"] is not None:
+        centroid = [row["centroid_x"], row["centroid_y"]]
+    return {"ref": grave_ref(row["section"], row["row_label"], row["stone_number"]),
+            "section": row["section"], "row": row["row_label"], "stone": row["stone_number"],
+            "state": map_state(row["persons"], row["has_photos"]),
+            "centroid": centroid, "outline": parse_polygon(row["outline"]),
+            "persons": row["persons"]}
+
+
+def fetch_map(conn: psycopg.Connection) -> dict:
+    """Return everything the cemetery map draws, in one answer.
+
+    Args:
+        conn: an open connection from `connect()`.
+
+    Returns:
+        {"image": …, "graves": […]}. `image` holds the aerial image's width,
+        height and tiles_path (None when no cemetery row exists yet), and
+        `graves` holds one entry per grave, as `map_grave` describes it. A
+        grave not yet placed has no centroid and no outline.
+    """
+    cemetery = conn.execute(CEMETERY_SQL).fetchone()
+    image = None
+    if cemetery is not None:
+        image = {"width": cemetery["aerial_width_px"], "height": cemetery["aerial_height_px"],
+                 "tiles_path": cemetery["tiles_path"]}
+    graves = [map_grave(row) for row in conn.execute(MAP_GRAVES_SQL)]
+    return {"image": image, "graves": graves}
