@@ -7,14 +7,15 @@
  *   list changes.
  * - The grave open in the record pane is drawn as selected, and the map flies
  *   to it.
- * - Clicking a grave opens its record. A shared stone first asks which person
- *   to open; a stone with photos but no legible name opens as a photo-only
- *   record. Missing records (placed, but with no photos) cannot be clicked.
+ * - Clicking a grave opens its record. A shared stone, or an area that several
+ *   graves not yet located share, first asks which person to open; a stone
+ *   with photos but no legible name opens as a photo-only record. Missing
+ *   records (placed, but with no photos) cannot be clicked.
  *
- * The map uses Leaflet's CRS.Simple, in pixels of the aerial image. There is no
- * aerial image yet, so the graves are drawn on a blank canvas. Until graves are
- * placed, VITE_MAP_DEMO_LAYOUT=true (set in .env.development) lays them out in a
- * labelled demo grid (see mapLayout.js).
+ * The map uses Leaflet's CRS.Simple, in pixels of the drone aerial, which is
+ * drawn underneath from its tile pyramid (see aerialTiles in mapLayout.js).
+ * Until graves are placed, VITE_MAP_DEMO_LAYOUT=true (set in .env.development)
+ * lays them out in a labelled demo grid on a blank canvas instead.
  *
  * The explore page loads the graves (/api/map/graves) once, for its list of
  * people and for the map, and hands them in; the map fetches nothing itself.
@@ -25,15 +26,20 @@
  */
 
 import { memo, useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { MapContainer, Polygon, Tooltip, ZoomControl, useMap, useMapEvents } from 'react-leaflet';
+import { MapContainer, Polygon, TileLayer, Tooltip, ZoomControl, useMap, useMapEvents } from 'react-leaflet';
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
-import { LEGEND, boundsOfGraves, graveStyle, resolveLayout } from './mapLayout.js';
+import {
+  LEGEND, MAX_MAP_ZOOM, MIN_MAP_ZOOM, aerialTiles, boundsOfGraves, resolveLayout, shapeStyle,
+} from './mapLayout.js';
 
 const ALLOW_DEMO_LAYOUT = import.meta.env.VITE_MAP_DEMO_LAYOUT === 'true';
+// The aerial's tiles ship with the site (cut by stone_mapping/make_tiles.py into public/tiles).
+const DEFAULT_TILES_PATH = `${import.meta.env.BASE_URL}tiles`;
 const EDGE_PADDING = 40;          // pixels kept free around whatever the map focuses on
 const MAX_FOCUS_ZOOM = 1;         // the closest the map zooms in on its own
 const MAX_COVERED_SHARE = 0.75;   // never treat more than this share of the map as covered
+const CHOOSER_ROOM = 280;         // pixels the chooser needs beside and below a click
 
 /**
  * Writes a person's name for the map: the Latin name, else the Hebrew one.
@@ -76,23 +82,38 @@ function focusPadding(map, coveredRef) {
 }
 
 /**
- * One grave's outline. Memoised, so that a change of selection or of the
- * search results redraws only the graves whose look changes.
+ * Lists who a shape holds, for its tooltip: everyone on it, or a note for a
+ * photo-only grave, cut short when an area holds many.
+ *
+ * @param {object} shape A shape from groupShapes in mapLayout.js.
+ * @returns {Array<string>} The lines to show.
+ */
+function tooltipLines(shape) {
+  const MAX_LINES = 6;
+  const lines = shape.entries.map((entry) => (entry.person ? personName(entry.person) : `Photos only (${entry.ref})`));
+  if (lines.length <= MAX_LINES) return lines;
+  return [...lines.slice(0, MAX_LINES - 1), `and ${lines.length - MAX_LINES + 1} more`];
+}
+
+/**
+ * One shape on the map: a grave's outline, or an area several graves share.
+ * Memoised, so that a change of selection or of the list redraws only the
+ * shapes whose look changes.
  *
  * @param {object} props
- * @param {object} props.grave The grave, with `positions` for Leaflet.
- * @param {boolean} props.isMatch Whether it holds someone in the search results.
- * @param {boolean} props.isSelected Whether it is open in the record pane.
- * @param {function(object, object): void} props.onClick Called with the grave
+ * @param {object} props.shape The shape, from groupShapes in mapLayout.js.
+ * @param {boolean} props.isMatch Whether any of its graves holds someone in the list.
+ * @param {boolean} props.isSelected Whether one of its graves is open in the record pane.
+ * @param {function(object, object): void} props.onClick Called with the shape
  *   and Leaflet's click event.
  * @returns {JSX.Element} The outline, with a tooltip naming its people.
  */
-const GraveOutline = memo(function GraveOutline({ grave, isMatch, isSelected, onClick }) {
+const ShapeOutline = memo(function ShapeOutline({ shape, isMatch, isSelected, onClick }) {
   const polygonRef = useRef(null);
-  const clickable = grave.state !== 'missing';
+  const clickable = shape.entries.length > 0;
   const eventHandlers = useMemo(
-    () => (clickable ? { click: (event) => onClick(grave, event) } : {}),
-    [clickable, grave, onClick],
+    () => (clickable ? { click: (event) => onClick(shape, event) } : {}),
+    [clickable, shape, onClick],
   );
 
   // Leaflet draws later outlines over earlier ones, so a highlighted grave is
@@ -101,20 +122,21 @@ const GraveOutline = memo(function GraveOutline({ grave, isMatch, isSelected, on
     if ((isMatch || isSelected) && polygonRef.current) polygonRef.current.bringToFront();
   }, [isMatch, isSelected]);
 
+  const shared = shape.graves.length > 1;
   return (
     <Polygon
       ref={polygonRef}
-      positions={grave.positions}
-      pathOptions={graveStyle(grave.state, isMatch, isSelected)}
+      positions={shape.positions}
+      pathOptions={shapeStyle(shape, isMatch, isSelected)}
       interactive={clickable}
       eventHandlers={eventHandlers}
     >
       {clickable && (
         <Tooltip sticky>
-          {grave.persons.length > 0
-            ? grave.persons.map((person) => <div key={person.person_id}>{personName(person)}</div>)
-            : <div className="fst-italic">Photos only: no name could be read</div>}
-          <div className="text-muted small">{grave.ref}</div>
+          {tooltipLines(shape).map((line) => <div key={line}>{line}</div>)}
+          <div className="text-muted small">
+            {shared ? `${shape.graves.length} graves not yet located exactly` : shape.refs[0]}
+          </div>
         </Tooltip>
       )}
     </Polygon>
@@ -181,34 +203,57 @@ function ChooserCloser({ onClose }) {
 }
 
 /**
- * The list of people on a shared stone, shown where the stone was clicked.
+ * Places the chooser at a click, opening towards the inside of the map near an
+ * edge, so that it never runs off the map.
+ *
+ * @param {{x: number, y: number}} point The click, in pixels from the map's top left.
+ * @param {{width: number, height: number}} size The map's size in pixels.
+ * @returns {object} CSS positions: left or right, and top or bottom.
+ */
+function chooserPosition(point, size) {
+  const horizontal = point.x + CHOOSER_ROOM > size.width
+    ? { right: size.width - point.x } : { left: point.x };
+  const vertical = point.y + CHOOSER_ROOM > size.height
+    ? { bottom: size.height - point.y } : { top: point.y };
+  return { ...horizontal, ...vertical };
+}
+
+/**
+ * The list of people in a shape that holds more than one, shown where it was
+ * clicked: a shared stone, or an area several graves share.
  *
  * @param {object} props
- * @param {{grave: object, point: {x: number, y: number}}} props.chooser The
- *   stone, and the click's position in pixels from the map's top left.
- * @param {function(string, string): void} props.onPick Called with the
- *   grave's reference and the chosen person's id.
+ * @param {{shape: object, position: object}} props.chooser The shape, and
+ *   where to show the chooser (see chooserPosition).
+ * @param {function(string, ?string): void} props.onPick Called with the chosen
+ *   grave's reference and person id (null for a photo-only grave).
  * @param {function(): void} props.onClose Closes the chooser.
  * @returns {JSX.Element} The chooser.
  */
 function SharedStoneChooser({ chooser, onPick, onClose }) {
-  const { grave, point } = chooser;
+  const { shape, position } = chooser;
+  const shared = shape.graves.length > 1;
   return (
-    <div className="map-chooser shadow" style={{ left: point.x, top: point.y }} role="dialog" aria-label="Choose a person">
-      <div className="d-flex justify-content-between align-items-center mb-1">
-        <span className="small text-muted">Shared stone · {grave.ref}</span>
+    <div className="map-chooser shadow" style={position} role="dialog" aria-label="Choose a person">
+      <div className="d-flex justify-content-between align-items-center mb-1 gap-2">
+        <span className="small text-muted">
+          {shared ? `${shape.graves.length} graves not yet located exactly` : `Shared stone · ${shape.refs[0]}`}
+        </span>
         <button type="button" className="btn-close btn-sm" aria-label="Close" onClick={onClose} />
       </div>
-      {grave.persons.map((person) => (
-        <button
-          key={person.person_id}
-          type="button"
-          className="map-chooser-person"
-          onClick={() => onPick(grave.ref, person.person_id)}
-        >
-          {personName(person)}
-        </button>
-      ))}
+      <div className="map-chooser-list">
+        {shape.entries.map((entry) => (
+          <button
+            key={`${entry.ref}|${entry.person?.person_id ?? ''}`}
+            type="button"
+            className="map-chooser-person"
+            onClick={() => onPick(entry.ref, entry.person?.person_id ?? null)}
+          >
+            {entry.person ? personName(entry.person) : 'Photos only'}
+            {shared && <span className="d-block text-muted small">{entry.ref}</span>}
+          </button>
+        ))}
+      </div>
     </div>
   );
 }
@@ -256,59 +301,70 @@ function MapLegend() {
  */
 function CemeteryMap({ mapData, loadError, matchRefs, selectedRef, onOpenRecord, coveredRef }) {
   const [chooser, setChooser] = useState(null);
+  // The map's frame, measured to keep the chooser inside it.
+  const frameRef = useRef(null);
 
   const layout = useMemo(
     () => (mapData ? resolveLayout(mapData, ALLOW_DEMO_LAYOUT) : null),
     [mapData],
   );
   // The whole drawing, as Leaflet bounds; the same array while the layout is.
+  // The aerial's tile layer, or null when there is none to draw (demo grid, no size).
+  const tiles = useMemo(
+    () => (layout ? aerialTiles(mapData.image, layout.demo, DEFAULT_TILES_PATH) : null),
+    [layout, mapData],
+  );
   const fullBounds = useMemo(
     () => (layout ? [[-layout.height, 0], [0, layout.width]] : null),
     [layout],
   );
 
   /**
-   * Opens the clicked grave's record, or asks which person when it is shared.
+   * Opens the record the clicked shape holds, or asks which one when it holds several.
    *
-   * @param {object} grave The grave clicked.
+   * @param {object} shape The shape clicked.
    * @param {object} event Leaflet's click event.
    */
-  const handleGraveClick = useCallback((grave, event) => {
+  const handleShapeClick = useCallback((shape, event) => {
     // Stop the click reaching the map, which would close the chooser just opened.
     L.DomEvent.stopPropagation(event);
-    if (grave.persons.length > 1) {
+    if (shape.entries.length > 1) {
       // The chooser lists the same names, so the hover tooltip would only cover it.
       event.target.closeTooltip();
-      setChooser({ grave, point: event.containerPoint });
+      const frame = frameRef.current;
+      const size = { width: frame.clientWidth, height: frame.clientHeight };
+      setChooser({ shape, position: chooserPosition(event.containerPoint, size) });
       return;
     }
     setChooser(null);
-    onOpenRecord(grave.ref, grave.persons[0]?.person_id ?? null);
+    const [entry] = shape.entries;
+    onOpenRecord(entry.ref, entry.person?.person_id ?? null);
   }, [onOpenRecord]);
 
   const closeChooser = useCallback(() => setChooser(null), []);
 
   return (
-    <div className="cemetery-map">
+    <div className="cemetery-map" ref={frameRef}>
       {layout && (
         <MapContainer
           crs={L.CRS.Simple}
           bounds={fullBounds}
-          minZoom={-4}
-          maxZoom={4}
+          minZoom={MIN_MAP_ZOOM}
+          maxZoom={MAX_MAP_ZOOM}
           zoomSnap={0.25}
           zoomControl={false}
           attributionControl={false}
           className="cemetery-map-canvas"
         >
           <ZoomControl position="topright" />
-          {layout.graves.map((grave) => (
-            <GraveOutline
-              key={grave.ref}
-              grave={grave}
-              isMatch={matchRefs.has(grave.ref)}
-              isSelected={grave.ref === selectedRef}
-              onClick={handleGraveClick}
+          {tiles && <TileLayer {...tiles} />}
+          {layout.shapes.map((shape) => (
+            <ShapeOutline
+              key={shape.key}
+              shape={shape}
+              isMatch={shape.refs.some((ref) => matchRefs.has(ref))}
+              isSelected={shape.refs.includes(selectedRef)}
+              onClick={handleShapeClick}
             />
           ))}
           <MapFocus fullBounds={fullBounds} graves={layout.graves} selectedRef={selectedRef} matchRefs={matchRefs} coveredRef={coveredRef} />
