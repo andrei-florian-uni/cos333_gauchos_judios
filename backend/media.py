@@ -10,7 +10,6 @@ Run it locally from `backend/` with `python media.py`.
 import argparse
 import csv
 import io
-import os
 import re
 from pathlib import Path
 
@@ -40,12 +39,9 @@ MIME_TYPES = {".jpg", ".jpeg", ".png", ".webp", ".heic", ".heif"}
 def configure_cloudinary() -> None:
     """Load credentials from .env and configure the Cloudinary SDK."""
     load_dotenv(ENV_FILE)
-    cloudinary.config(
-        cloud_name=os.environ.get("CLOUDINARY_CLOUD_NAME"),
-        api_key=os.environ.get("CLOUDINARY_API_KEY"),
-        api_secret=os.environ.get("CLOUDINARY_API_SECRET"),
-        secure=True
-    )
+    # The Cloudinary SDK automatically picks up the CLOUDINARY_URL environment variable.
+    # Setting secure=True ensures HTTPS is used for API calls.
+    cloudinary.config(secure=True)
 
 
 def process_image(image_path: Path) -> io.BytesIO:
