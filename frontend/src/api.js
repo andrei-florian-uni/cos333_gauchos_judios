@@ -64,12 +64,14 @@ export async function searchArchive(query, filters, signal) {
 
 /**
  * Fetches every grave of the cemetery, in cemetery order (sections women,
- * children, men; rows in natural order; stones by number), with its people.
- * The one request will also serve the map: it carries each grave's outline
- * and state, which the explore page does not show yet.
+ * children, men; rows in natural order; stones by number), with its people,
+ * and the size of the aerial image the map lays the graves out on. The one
+ * request serves both the full list of people and the cemetery map.
  *
  * @param {AbortSignal} [signal] Cancels the request, e.g. when the page closes.
- * @returns {Promise<Array<object>>} The graves. Each holds ref, section, row,
+ * @returns {Promise<{image: ?object, graves: Array<object>}>} `image` holds
+ *   the aerial image's width, height and tiles_path (null when no cemetery
+ *   row exists; each part null until loaded). Each grave holds ref, section, row,
  *   stone, state ('documented', 'incomplete' or 'missing'), centroid and
  *   outline (null until the grave is placed on the map), photo, and persons:
  *   the people on the stone, ordered by name, each with person_id, the four
@@ -88,7 +90,7 @@ export async function getMapGraves(signal) {
   if (!response.ok) throw new Error(ARCHIVE_FAILED);
   try {
     const data = await response.json();
-    return data.graves || [];
+    return { image: data.image || null, graves: data.graves || [] };
   } catch (err) {
     throw new Error(ARCHIVE_FAILED, { cause: err });
   }

@@ -1,9 +1,10 @@
 /**
- * Explore page (/explore): a name search box with filters, the list of
- * people, and the record pane (N8) of the person selected in it.
+ * Explore page (/explore): the cemetery map (N4) filling the page, with the
+ * search panel (N2, N3) and the record pane (N8) floating over its left side,
+ * so the map stays visible on the right.
  *
- * On arrival the page loads every grave once from /api/map/graves, the
- * request the cemetery map will use too, and lists everyone in cemetery order
+ * On arrival the page loads every grave once from /api/map/graves, which
+ * draws the map as well, and lists everyone in cemetery order
  * (sections women, children, men; rows in natural order; stones by number).
  * The filters alone narrow that list, here in the browser. A name search asks
  * /api/search for every match, best first, filtered by the API. Either list
@@ -12,15 +13,19 @@
  * The search lives in the URL (?q=…, plus any filters, such as
  * &death_from=1920&section=women), so a search from the landing page, a shared
  * link and the browser's Back button all show the right list; clearing the
- * name returns to everyone. Clicking a row loads its grave from
- * /api/graves/<ref> and opens the record pane beside the list. The cemetery
- * map is not part of this page yet.
+ * name returns to everyone.
+ *
+ * The map and the panels share one selection. Clicking a row, or a grave on
+ * the map, loads the grave from /api/graves/<ref> and opens the record pane;
+ * the map highlights the graves of a name search's results (or of everyone
+ * who passes the filters) and flies to the grave that is open.
  */
 
-import { useState, useEffect, useMemo, useRef } from 'react';
-import { useSearchParams } from 'react-router-dom';
-import { Container, Table, Spinner, Alert, Form, Button, Row, Col } from 'react-bootstrap';
+import { useState, useEffect, useMemo, useRef, useCallback } from 'react';
+import { Link, useSearchParams } from 'react-router-dom';
+import { Spinner, Alert, Form, Button } from 'react-bootstrap';
 import { getMapGraves, getRecord, searchArchive } from './api.js';
+import CemeteryMap from './CemeteryMap.jsx';
 import FiltersMenu from './FiltersMenu.jsx';
 import RecordPane from './RecordPane.jsx';
 import { describeYears } from './recordDates.js';
@@ -31,6 +36,9 @@ import {
 
 /** How many people a list shows at first, and how many more each "Show more" adds. */
 const PAGE_SIZE = 50;
+
+/** No graves to highlight; one Set for good, so the map is not told of a change. */
+const NO_MATCHES = new Set();
 
 /**
  * Joins the non-empty parts of a name with spaces.
@@ -128,7 +136,7 @@ function SearchForm({ initialQuery, filters, onSearch }) {
   };
 
   return (
-    <div className="mt-3">
+    <div className="mt-2">
       <Form onSubmit={handleSubmit} className="d-flex gap-2" role="search">
         <Form.Control
           type="search"
@@ -166,11 +174,12 @@ function ExplorePage() {
   // The whole search (name and filters) as one string, e.g. "q=Eva&section=women".
   const searchString = searchParamsFor(urlQuery, filters).toString();
 
-  // Everyone in the archive, loaded once from /api/map/graves. `archiveAttempt`
-  // counts the loads asked for, so "Try again" after a failure loads again;
-  // `archive.attempt` is the load whose outcome it holds.
+  // Everyone in the archive, loaded once from /api/map/graves, as the list's
+  // people and as the map's data. `archiveAttempt` counts the loads asked for,
+  // so "Try again" after a failure loads again; `archive.attempt` is the load
+  // whose outcome it holds.
   const [archiveAttempt, setArchiveAttempt] = useState(0);
-  const [archive, setArchive] = useState({ attempt: -1, people: [], error: null });
+  const [archive, setArchive] = useState({ attempt: -1, people: [], mapData: null, error: null });
   const archiveLoading = archive.attempt !== archiveAttempt;
 
   // `attempt` counts submissions, so that submitting the same search again
@@ -184,10 +193,15 @@ function ExplorePage() {
   const [selectedRecord, setSelectedRecord] = useState(null);
   const [recordLoading, setRecordLoading] = useState(false);
   const [recordError, setRecordError] = useState(null);
-  // The person whose record was asked for last. A response for anyone else
-  // arrived late (the visitor clicked again, or closed the pane) and is dropped.
-  const requestedPerson = useRef(null);
+  // The grave selected on the map; set at once on a click, before its record loads.
+  const [selectedRef, setSelectedRef] = useState(null);
+  // The record asked for last, as "<ref>|<person id>". A response for any
+  // other record arrived late (the visitor clicked again, or closed the pane)
+  // and is dropped.
+  const requestedRecord = useRef(null);
   const paneOpen = Boolean(selectedRecord || recordLoading || recordError);
+  // The panels floating over the map, so the map can keep clear of them.
+  const panelsRef = useRef(null);
 
   // Only a search with a name runs: the API finds no one without one.
   const searchKey = urlQuery ? `${attempt}:${searchString}` : '';
@@ -199,10 +213,12 @@ function ExplorePage() {
   useEffect(() => {
     const controller = new AbortController();
     getMapGraves(controller.signal)
-      .then((graves) => setArchive({ attempt: archiveAttempt, people: listPeople(graves), error: null }))
+      .then((mapData) => setArchive({
+        attempt: archiveAttempt, people: listPeople(mapData.graves), mapData, error: null,
+      }))
       .catch((err) => {
         if (!controller.signal.aborted) {
-          setArchive({ attempt: archiveAttempt, people: [], error: err.message });
+          setArchive({ attempt: archiveAttempt, people: [], mapData: null, error: err.message });
         }
       });
     return () => controller.abort();
@@ -225,8 +241,9 @@ function ExplorePage() {
    * Closes the record pane and forgets any record still loading.
    */
   const closeRecord = () => {
-    requestedPerson.current = null;
+    requestedRecord.current = null;
     setSelectedRecord(null);
+    setSelectedRef(null);
     setRecordLoading(false);
     setRecordError(null);
   };
@@ -251,32 +268,38 @@ function ExplorePage() {
   };
 
   /**
-   * Opens the record pane for a clicked result: loads the person's grave and
-   * picks the person out of it, since a shared stone holds several people.
+   * Opens the record pane for a grave, from a click on a row or on the map:
+   * loads the grave and picks the person out of it, since a shared stone holds
+   * several people. It only uses state setters and a ref, so it can stay the
+   * same function between renders, which lets the map skip redrawing graves.
    *
-   * @param {object} person The search result clicked.
+   * @param {string} ref The grave's reference, e.g. "W-12-4".
+   * @param {?string} personId The person to show, or null for a grave with no
+   *   one named on it (a photo-only record).
    */
-  const handleRowClick = (person) => {
-    if (requestedPerson.current === person.person_id) return;
-    requestedPerson.current = person.person_id;
+  const openRecord = useCallback((ref, personId) => {
+    const key = `${ref}|${personId ?? ''}`;
+    if (requestedRecord.current === key) return;
+    requestedRecord.current = key;
+    setSelectedRef(ref);
     setRecordLoading(true);
     setRecordError(null);
-    getRecord(person.ref)
+    getRecord(ref)
       .then((graveData) => {
-        if (requestedPerson.current !== person.person_id) return;
-        const fullPersonData = graveData.persons.find((p) => p.id === person.person_id) || {};
-        setSelectedRecord({ ...graveData, ...fullPersonData, person_id: person.person_id });
+        if (requestedRecord.current !== key) return;
+        const fullPersonData = graveData.persons.find((p) => p.id === personId) || {};
+        setSelectedRecord({ ...graveData, ...fullPersonData, person_id: personId });
         setRecordLoading(false);
       })
       .catch((err) => {
-        if (requestedPerson.current !== person.person_id) return;
-        // Clear the request too, so that clicking the same row again retries.
-        requestedPerson.current = null;
+        if (requestedRecord.current !== key) return;
+        // Clear the request too, so that clicking the same grave again retries.
+        requestedRecord.current = null;
         setSelectedRecord(null);
         setRecordError(err.message);
         setRecordLoading(false);
       });
-  };
+  }, []);
 
   // The list: the name search's results, best first, or everyone who passes
   // the filters, in cemetery order.
@@ -297,146 +320,155 @@ function ExplorePage() {
   const [visible, setVisible] = useState({ key: '', count: PAGE_SIZE });
   const visibleCount = visible.key === listKey ? visible.count : PAGE_SIZE;
 
+  // The graves the map highlights, once a name or a filter narrows the list:
+  // • a name search: the rows shown so far, best first. It returns every
+  //   match, weak ones too, and lighting them all would cover most of the
+  //   cemetery; "Show more" lights up the next rows with the list.
+  // • filters alone: everyone who passes, to show where they lie.
+  // The full, unfiltered list would light up every grave, so it highlights none.
+  const highlight = (isNameSearch || filtersSet) && !listLoading && !listError;
+  const highlightedRows = isNameSearch ? rows.slice(0, visibleCount) : rows;
+  const highlightKey = highlightedRows.map((person) => person.ref).join(',');
+  const matchRefs = useMemo(
+    () => (highlight && highlightKey ? new Set(highlightKey.split(',')) : NO_MATCHES),
+    [highlight, highlightKey],
+  );
+
   return (
-    <Container className="py-5 mt-5">
-      <Row className="mb-4">
-        <Col md={8} lg={6}>
-          <h2>Archive Search</h2>
-          <SearchForm key={urlQuery} initialQuery={urlQuery} filters={filters} onSearch={handleSearch} />
-        </Col>
-      </Row>
+    <div className="explore-page">
+      <header className="explore-header">
+        <Link to="/" className="explore-home">&larr; Home</Link>
+        <span className="explore-title">Gauchos Judíos · Cemetery explorer</span>
+      </header>
 
-      {/* Loading State */}
-      {listLoading && (
-        <div className="text-center py-5" role="status">
-          <Spinner animation="border" variant="success" />
-          <p className="mt-2 text-muted">{isNameSearch ? 'Searching archive...' : 'Loading the archive...'}</p>
-        </div>
-      )}
+      <div className="explore-body">
+        <CemeteryMap
+          mapData={archive.mapData}
+          loadError={archive.error}
+          matchRefs={matchRefs}
+          selectedRef={selectedRef}
+          onOpenRecord={openRecord}
+          coveredRef={panelsRef}
+        />
 
-      {/* Error State; the full list can be loaded again */}
-      {!listLoading && listError && (
-        <Alert variant="danger">
-          {listError}
-          {!isNameSearch && (
-            <Button variant="link" className="p-0 ms-2 align-baseline" onClick={() => setArchiveAttempt((n) => n + 1)}>
-              Try again
-            </Button>
-          )}
-        </Alert>
-      )}
+        <div className="explore-panels" ref={panelsRef}>
+          {/* Search panel (N2, N3) */}
+          <section className="explore-panel" aria-label="Search">
+            <h2 className="h5 mb-0">Archive search</h2>
+            <SearchForm key={urlQuery} initialQuery={urlQuery} filters={filters} onSearch={handleSearch} />
 
-      {/* Nobody to list */}
-      {!listLoading && !listError && count === 0 && (isNameSearch || filtersSet) && (
-        <Alert variant="info" role="status">
-          {isNameSearch
-            ? `No people found matching "${urlQuery}"${filtersSet ? ' with these filters' : ''}.`
-            : 'No people match these filters.'}
-          {filtersSet && (
-            <Button variant="link" className="p-0 ms-2 align-baseline" onClick={() => handleSearch(urlQuery, NO_FILTERS)}>
-              Clear filters
-            </Button>
-          )}
-        </Alert>
-      )}
+            <div className="explore-panel-scroll mt-3">
+              {listLoading && (
+                <div className="text-center py-4" role="status">
+                  <Spinner animation="border" variant="success" />
+                  <p className="mt-2 text-muted">{isNameSearch ? 'Searching archive...' : 'Loading the archive...'}</p>
+                </div>
+              )}
 
-      {/* Results list, narrowed to make room for the record pane when one is open */}
-      <div className="d-flex align-items-start gap-4 position-relative">
-        <div className="flex-grow-1" style={{ maxWidth: paneOpen ? '55%' : '100%', transition: 'max-width 0.3s ease' }}>
-          {!listLoading && count > 0 && (
-            <p className="text-muted small mb-2" role="status">
-              {isNameSearch
-                ? `${count} ${count === 1 ? 'result' : 'results'} · best match first`
-                : `${count} ${count === 1 ? 'person' : 'people'} · in cemetery order`}
-            </p>
-          )}
+              {/* Error; the full list can be loaded again */}
+              {!listLoading && listError && (
+                <Alert variant="danger">
+                  {listError}
+                  {!isNameSearch && (
+                    <Button variant="link" className="p-0 ms-2 align-baseline" onClick={() => setArchiveAttempt((n) => n + 1)}>
+                      Try again
+                    </Button>
+                  )}
+                </Alert>
+              )}
 
-          {!listLoading && count > 0 && (
-            <div className="table-responsive shadow-sm rounded">
-              <Table hover className="align-middle mb-0 bg-white">
-                <thead className="bg-light">
-                  <tr>
-                    <th>Name</th>
-                    <th>Hebrew Name</th>
-                    <th>Grave</th>
-                    <th>Years</th>
-                    {isNameSearch && <th>Score</th>}
-                  </tr>
-                </thead>
-                <tbody>
-                  {rows.slice(0, visibleCount).map((person) => {
-                    const latin = joinName(person.name_es, person.surname_es);
-                    const hebrew = joinName(person.name_he, person.surname_he);
-                    const isSelected = selectedRecord?.person_id === person.person_id;
+              {/* Nobody to list */}
+              {!listLoading && !listError && count === 0 && (isNameSearch || filtersSet) && (
+                <Alert variant="info" role="status">
+                  {isNameSearch
+                    ? `No people found matching "${urlQuery}"${filtersSet ? ' with these filters' : ''}.`
+                    : 'No people match these filters.'}
+                  {filtersSet && (
+                    <Button variant="link" className="p-0 ms-2 align-baseline" onClick={() => handleSearch(urlQuery, NO_FILTERS)}>
+                      Clear filters
+                    </Button>
+                  )}
+                </Alert>
+              )}
 
-                    return (
-                      <tr
-                        key={person.person_id}
-                        onClick={() => handleRowClick(person)}
-                        className={isSelected ? 'table-active' : ''}
-                        style={{ cursor: 'pointer', transition: 'background-color 0.2s' }}
+              {!listLoading && count > 0 && (
+                <>
+                  <p className="text-muted small mb-2" role="status">
+                    {isNameSearch
+                      ? `${count} ${count === 1 ? 'result' : 'results'} · best match first · highlighted on the map`
+                      : `${count} ${count === 1 ? 'person' : 'people'} · in cemetery order${filtersSet ? ' · highlighted on the map' : ''}`}
+                  </p>
+                  <ul className="result-list">
+                    {rows.slice(0, visibleCount).map((person) => {
+                      const latin = joinName(person.name_es, person.surname_es);
+                      const hebrew = joinName(person.name_he, person.surname_he);
+                      const isSelected = selectedRecord?.person_id === person.person_id;
+                      return (
+                        <li key={person.person_id}>
+                          <button
+                            type="button"
+                            className={`result-item${isSelected ? ' result-item-selected' : ''}`}
+                            aria-current={isSelected ? 'true' : undefined}
+                            onClick={() => openRecord(person.ref, person.person_id)}
+                          >
+                            <span className="d-flex justify-content-between gap-2">
+                              <span className="fw-bold">{latin || '—'}</span>
+                              <span dir="rtl" lang="he">{hebrew}</span>
+                            </span>
+                            <span className="d-flex justify-content-between gap-2 small text-muted">
+                              <span>{describeGrave(person)} · {describeYears(person)}</span>
+                              {isNameSearch && (
+                                <span className="badge bg-secondary align-self-center">{person.score.toFixed(2)}</span>
+                              )}
+                            </span>
+                          </button>
+                        </li>
+                      );
+                    })}
+                  </ul>
+
+                  {/* Show more: the next PAGE_SIZE rows of the same list */}
+                  {count > visibleCount && (
+                    <div className="d-flex justify-content-between align-items-center mt-2 mb-1">
+                      <span className="text-muted small">Showing {visibleCount} of {count}</span>
+                      <Button
+                        variant="outline-secondary"
+                        size="sm"
+                        onClick={() => setVisible({ key: listKey, count: visibleCount + PAGE_SIZE })}
                       >
-                        <td className="fw-bold">{latin || '—'}</td>
-                        <td className="fs-5" dir="rtl" lang="he">{hebrew || '—'}</td>
-                        <td>
-                          {describeGrave(person)}
-                          <div className="text-muted small">{person.ref}</div>
-                        </td>
-                        <td>{describeYears(person)}</td>
-                        {isNameSearch && (
-                          <td><span className="badge bg-secondary">{person.score.toFixed(2)}</span></td>
-                        )}
-                      </tr>
-                    );
-                  })}
-                </tbody>
-              </Table>
+                        Show more
+                      </Button>
+                    </div>
+                  )}
+                </>
+              )}
             </div>
-          )}
+          </section>
 
-          {/* Show more: the next PAGE_SIZE rows of the same list */}
-          {!listLoading && count > visibleCount && (
-            <div className="d-flex justify-content-between align-items-center mt-3">
-              <span className="text-muted small">Showing {visibleCount} of {count}</span>
-              <Button
-                variant="outline-secondary"
-                onClick={() => setVisible({ key: listKey, count: visibleCount + PAGE_SIZE })}
-              >
-                Show more
-              </Button>
-            </div>
+          {/* Record pane (N8): loading, an error, or the selected record */}
+          {paneOpen && (
+            <section className="explore-panel explore-record" aria-label="Record">
+              {recordLoading && (
+                <div className="text-center py-5" role="status">
+                  <Spinner animation="border" variant="success" />
+                  <p className="mt-2 text-muted">Loading record...</p>
+                </div>
+              )}
+              {!recordLoading && recordError && (
+                <Alert variant="danger" dismissible onClose={closeRecord}>
+                  {recordError}
+                </Alert>
+              )}
+              {!recordLoading && selectedRecord && (
+                <div className="explore-panel-scroll">
+                  <RecordPane record={selectedRecord} onClose={closeRecord} />
+                </div>
+              )}
+            </section>
           )}
         </div>
-
-        {/* Record pane (N8): loading, an error, or the selected record */}
-        {paneOpen && (
-          <div
-            className="record-pane-wrapper"
-            style={{
-              width: '45%',
-              position: 'sticky',
-              top: '100px',
-              animation: 'slideIn 0.3s ease-out'
-            }}
-          >
-            {recordLoading && (
-              <div className="text-center py-5 bg-white shadow-sm rounded border" role="status">
-                <Spinner animation="border" variant="success" />
-                <p className="mt-2 text-muted">Loading record...</p>
-              </div>
-            )}
-            {!recordLoading && recordError && (
-              <Alert variant="danger" dismissible onClose={closeRecord}>
-                {recordError}
-              </Alert>
-            )}
-            {!recordLoading && selectedRecord && (
-              <RecordPane record={selectedRecord} onClose={closeRecord} />
-            )}
-          </div>
-        )}
       </div>
-    </Container>
+    </div>
   );
 }
 

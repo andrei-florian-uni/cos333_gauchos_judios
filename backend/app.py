@@ -44,21 +44,23 @@ class InvalidParameter(ValueError):
     """A request whose parameters cannot be used; answered with status 400."""
 
 
-def load_archive() -> tuple[SearchIndex, list[dict]]:
+def load_archive() -> tuple[SearchIndex, list[dict], dict | None]:
     """Read the archive from the database: build the search index and list the graves.
 
     Returns:
-        The search index, and every grave in cemetery order as
-        `/api/map/graves` returns them (see db.fetch_map_graves).
+        The search index; every grave in cemetery order as `/api/map/graves`
+        returns them (see db.fetch_map_graves); and the aerial image's size
+        and tiles path (see db.fetch_cemetery_image).
     """
     with db.connect() as conn:
         persons = db.fetch_search_rows(conn)
         vectors = db.fetch_name_vectors(conn)
         graves = db.fetch_map_graves(conn)
+        image = db.fetch_cemetery_image(conn)
     index = SearchIndex(persons, read_dictionary(), load_encoder(), vectors)
     logger.info("Archive read: %d persons, %d spellings, %d graves",
                 len(persons), len(index.spellings.displays), len(graves))
-    return index, graves
+    return index, graves, image
 
 
 # ═════════════════════════════════════════════════════════════════════════════
@@ -189,9 +191,12 @@ def map_graves_route():
     in turn. See db.fetch_map_graves for the fields.
 
     Returns:
-        {"graves": [...]}.
+        {"image": {...}, "graves": [...]}: the aerial image's width, height
+        and tiles_path (see db.fetch_cemetery_image; None when no cemetery
+        row exists), which the map lays the outlines out on, and the graves.
     """
-    return jsonify({"graves": current_app.config["MAP_GRAVES"]})
+    return jsonify({"image": current_app.config["MAP_IMAGE"],
+                    "graves": current_app.config["MAP_GRAVES"]})
 
 
 def grave_route(ref):
@@ -220,13 +225,16 @@ def server_error(_error: Exception):
 
 
 def create_app(search_index: SearchIndex | None = None,
-               map_graves: list[dict] | None = None) -> Flask:
+               map_graves: list[dict] | None = None,
+               map_image: dict | None = None) -> Flask:
     """Create the Flask application.
 
     Args:
         search_index: the index to answer from.
         map_graves: the graves `/api/map/graves` returns. When either is
-            None, both are read from the database.
+            None, both are read from the database, with the aerial image.
+        map_image: the aerial image's size and tiles path, which
+            `/api/map/graves` returns with the graves; None when unknown.
 
     Returns:
         The application, with CORS open only to the origins in CORS_ORIGINS.
@@ -237,9 +245,10 @@ def create_app(search_index: SearchIndex | None = None,
                .split(",") if origin.strip()]
     CORS(application, origins=origins)
     if search_index is None or map_graves is None:
-        search_index, map_graves = load_archive()
+        search_index, map_graves, map_image = load_archive()
     application.config["SEARCH_INDEX"] = search_index
     application.config["MAP_GRAVES"] = map_graves
+    application.config["MAP_IMAGE"] = map_image
     application.add_url_rule("/api/search", view_func=search_route, methods=["GET"])
     application.add_url_rule("/api/map/graves", view_func=map_graves_route, methods=["GET"])
     application.add_url_rule("/api/graves/<ref>", view_func=grave_route, methods=["GET"])

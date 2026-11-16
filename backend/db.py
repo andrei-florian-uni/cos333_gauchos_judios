@@ -68,6 +68,12 @@ GRAVE_PHOTOS_SQL = """
      WHERE grave_id = %s
      ORDER BY kind = 'main' DESC, sort_order, cloudinary_public_id
 """
+CEMETERY_SQL = """
+    SELECT name, aerial_width_px, aerial_height_px, tiles_path
+      FROM cemetery
+     ORDER BY name
+     LIMIT 1
+"""
 
 
 # ═════════════════════════════════════════════════════════════════════════════
@@ -309,3 +315,25 @@ def fetch_grave_record(conn: psycopg.Connection, ref: str) -> dict | None:
             "stone": grave["stone_number"],
             "persons": [dict(person) for person in persons],
             "photos": [dict(photo) for photo in photos]}
+
+
+# ═════════════════════════════════════════════════════════════════════════════
+# THE AERIAL IMAGE
+# ═════════════════════════════════════════════════════════════════════════════
+def fetch_cemetery_image(conn: psycopg.Connection) -> dict | None:
+    """Return the size of the cemetery's aerial image and where its tiles are.
+
+    Args:
+        conn: an open connection from `connect()`.
+
+    Returns:
+        {"width": …, "height": …, "tiles_path": …}, as the cemetery row
+        records them (each None until the loader is given them), or None when
+        no cemetery row exists yet. The map lays the graves out on an image of
+        this size, since their outlines are in its pixels.
+    """
+    cemetery = conn.execute(CEMETERY_SQL).fetchone()
+    if cemetery is None:
+        return None
+    return {"width": cemetery["aerial_width_px"], "height": cemetery["aerial_height_px"],
+            "tiles_path": cemetery["tiles_path"]}
