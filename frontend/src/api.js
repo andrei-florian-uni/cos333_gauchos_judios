@@ -15,6 +15,7 @@ const API_URL = (import.meta.env.VITE_API_URL || '').replace(/\/+$/, '');
 const SEARCH_FAILED = 'The search could not be completed. Please try again.';
 const RECORD_FAILED = 'The record could not be loaded. Please try again.';
 const RECORD_NOT_FOUND = 'This grave record was not found.';
+const MAP_FAILED = 'The cemetery map could not be loaded. Please reload the page.';
 
 /**
  * Searches the archive by name, keeping only the people who pass the filters.
@@ -74,5 +75,33 @@ export async function getRecord(ref) {
     return await response.json();
   } catch (err) {
     throw new Error(RECORD_FAILED, { cause: err });
+  }
+}
+
+/**
+ * Fetches every grave the cemetery map draws.
+ *
+ * @param {AbortSignal} [signal] Cancels the request, e.g. when the page closes.
+ * @returns {Promise<{image: ?object, graves: Array<object>}>} The aerial
+ *   image's width, height and tiles_path (or null), and one entry per grave:
+ *   ref, section, row, stone, state ("documented", "incomplete" or "missing"),
+ *   centroid and outline in image pixels (null until the grave is placed), and
+ *   persons (id and the four name columns of each person on it).
+ * @throws {Error} When the API cannot be reached, answers with an error or
+ *   does not answer with JSON; an AbortError when `signal` cancels the request.
+ */
+export async function getMapGraves(signal) {
+  let response;
+  try {
+    response = await fetch(`${API_URL}/api/map/graves`, { signal });
+  } catch (err) {
+    if (err.name === 'AbortError') throw err;
+    throw new Error(MAP_FAILED, { cause: err });
+  }
+  if (!response.ok) throw new Error(MAP_FAILED);
+  try {
+    return await response.json();
+  } catch (err) {
+    throw new Error(MAP_FAILED, { cause: err });
   }
 }
