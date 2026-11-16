@@ -1,0 +1,150 @@
+{
+  "common": {
+    "siteTitle": "Los Gauchos Judíos · Cemetery archive",
+    "languageToggle": "Language",
+    "searchPlaceholder": "Search for a name..."
+  },
+  "landing": {
+    "hero": {
+      "lead": "Resting place of the Jewish families who farmed Colonia Lucienville from 1894. 794 of its graves are now photographed and searchable by name.",
+      "exploreMap": "Explore the cemetery map",
+      "learnMore": "Learn more",
+      "pauseVideo": "Pause",
+      "playVideo": "Play"
+    },
+    "history": {
+      "colonies": {
+        "heading": "Jewish Farmers in the Pampas of Argentina",
+        "p1": "In the late 19th century, a wave of pogroms swept the Russian Empire, targeting the Jewish population that had lived there for centuries. Baron Maurice de Hirsch, a Jewish-German philanthropist, sought to help persecuted Jews by resettling them as farmers in Argentina's vast countryside. He founded the Jewish Colonization Association in 1891, which set out to buy land and establish agricultural colonies for the Eastern European Jews.",
+        "p2": "Colonia Lucienville, named after the Baron's only son who predeceased his parents, was founded in 1894, near the railway station of Basavilbaso, Entre Ríos. The first families came from Kherson and Bessarabia in today's southern regions of Ukraine and Moldova. They raised cattle and grew crops, founded Jewish communal institutions, and even established the first agricultural cooperative in Argentina. Alberto Gerchunoff, a prominent Argentine writer who grew up in the Jewish colonies, coined the term \"los Gauchos Judíos\", or \"the Jewish Cowboys\", to describe the Eastern European Jews who had adapted to the harsh agricultural conditions of the Argentine plains. Over the 20th century, most of the community's descendants have moved away from the colonies, and scattered throughout Argentina and the rest of the world."
+      },
+      "cemetery": {
+        "p1": "One of the first institutions the community established was the Jewish cemetery, founded in 1895, a year after the first families arrived. The cemetery and the community are also known as Novibuco, named after Novyi Buh, the Ukrainian town many of the first settlers came from. With approximately 2,500 headstones, this is the largest Jewish cemetery in Colonia Lucienville.",
+        "p2": "The cemetery consists of a men's section, a women's section, and a children's section. The newer parts of the cemetery mix somewhat, but the layout largely follows this traditional separation. The headstones are inscribed in Spanish, Hebrew and Yiddish, and include valuable records that shed light on a community in transition, from its Eastern European shtetl roots, to its modernization and secularization which followed. Today, the cemetery is cared for by the Jewish community of Basavilbaso (Asociación Israelita Basavilbaso)."
+      },
+      "project": {
+        "p1": "In January 2026, a team of Princeton students traveled to Basavilbaso, with support from the Princeton Institute for International and Regional Studies (PIIRS), the Effron Center, and the Department of Spanish and Portuguese. In collaboration with local caretakers and stakeholders in the Jewish community of Argentina, they cleaned and photographed 794 graves, covering the women's and children's sections of the cemetery.",
+        "p2": "The photos were then sorted and transcribed using AI tools and checked by hand. A student team was formed to transform the records into a publicly accessible archive, where anyone can search for a name in Spanish or Hebrew, or explore the aerial map of the cemetery. The men's section will be documented and added to the archive in the future.",
+        "sourcesLink": "Sources are listed at the bottom of the page"
+      }
+    },
+    "carousel": {
+      "heading": "From the fieldwork",
+      "credit": "Photos: Los Gauchos Judíos team, January 2026",
+      "previous": "Previous",
+      "next": "Next",
+      "slides": {
+        "entrance": {
+          "title": "Arriving at the cemetery",
+          "caption": "The team at the entrance building, whose sign reads \"Cementerio Israelita fundado en 1895.\""
+        },
+        "aerial": {
+          "title": "The cemetery from above",
+          "caption": "A brick wall encloses about 2,500 headstones in the open farmland outside Basavilbaso."
+        },
+        "stones": {
+          "title": "Faces and stars",
+          "caption": "Many stones carry a Star of David and an enamel portrait of the person buried there."
+        },
+        "cleaning": {
+          "title": "Cleaning the stones",
+          "caption": "Before photographing, the team scrubbed away lichen and dirt so every inscription could be read."
+        },
+        "rowByRow": {
+          "title": "Row by row",
+          "caption": "Cleaning a stone in the children's section. Small pebbles on a nearby grave mark a visitor's remembrance."
+        },
+        "interview": {
+          "title": "Sharing the story",
+          "caption": "Uriel Lin, team leader, speaks with FM Riel about the project."
+        },
+        "station": {
+          "title": "The town the colony grew around",
+          "caption": "The team at Basavilbaso's railway station. Colonia Lucienville was settled around it in 1894."
+        },
+        "team": {
+          "title": "The team",
+          "caption": "Princeton students with local caretakers and community members who made the work possible."
+        }
+      }
+    },
+    "timeline": {
+      "heading": "From the colonies to the archive",
+      "eraColonies": "The colonies",
+      "eraProject": "The project",
+      "events": {
+        "pogroms": {
+          "date": "1880s-1900s",
+          "title": "Pogroms in the Russian Empire",
+          "desc": "Violence and new restrictions push Jewish families to look for a life elsewhere."
+        },
+        "railway": {
+          "date": "1887",
+          "title": "The railway reaches Basavilbaso",
+          "desc": "A new station on the Entre Ríos line, around which the colony will grow."
+        },
+        "jca": {
+          "date": "1891",
+          "title": "The Jewish Colonization Association is founded",
+          "desc": "Baron Maurice de Hirsch, mourning his son Lucien, founds it to resettle Jews as farmers in Argentina."
+        },
+        "lucienville": {
+          "date": "1894",
+          "title": "Colonia Lucienville is founded",
+          "desc": "Families from Kherson and Bessarabia arrive at Basavilbaso."
+        },
+        "cemetery": {
+          "date": "1895",
+          "title": "The cemetery is founded",
+          "desc": "Cementerio Israelita, Colonia N.º 1, also known as Novibuco."
+        },
+        "cooperative": {
+          "date": "1900",
+          "title": "Argentina's first agricultural cooperative",
+          "desc": "The colonists found it on August 12 in Basavilbaso."
+        },
+        "fieldwork": {
+          "date": "January 2026",
+          "title": "Fieldwork",
+          "desc": "A Princeton team photographs 794 graves in the women's and children's sections."
+        },
+        "building": {
+          "date": "March 2026 - December 2026",
+          "title": "Building the archive",
+          "desc": "The records are processed and the website is developed."
+        },
+        "online": {
+          "date": "December 2026",
+          "title": "The archive goes online",
+          "desc": "Anyone can search for a name and find the grave on the map."
+        },
+        "mensSection": {
+          "date": "Next",
+          "title": "The men's section",
+          "desc": "A future trip will document the rest of the cemetery."
+        }
+      }
+    },
+    "footer": {
+      "sources": "Sources",
+      "sourceList": {
+        "amiaBasavilbaso": "AMIA Vaad Hakehilot, \"Asociación Israelita de Basavilbaso\" (in Spanish)",
+        "amiaNovibuco": "AMIA Vaad Hakehilot, \"Novibuco\" (in Spanish)",
+        "icufCooperative": "ICUF Argentina, \"La primera cooperativa agrícola del país: Lucienville\" (in Spanish)",
+        "jewishGen": "JewishGen KehilaLinks, \"Basavilbaso - Lucienville, Argentina,\" compiled by Yehuda Mathov",
+        "wikipediaHirsch": "Wikipedia, \"Maurice de Hirsch\"",
+        "fieldwork": "Los Gauchos Judíos fieldwork, Basavilbaso, January 2026"
+      },
+      "credits": "Credits",
+      "partnershipLabel": "In partnership with:",
+      "partnership": "the Jewish community of Basavilbaso (Asociación Israelita Basavilbaso) and the cemetery's local caretakers",
+      "supportLabel": "With support from:",
+      "support": "the Princeton Institute for International and Regional Studies (PIIRS), the Effron Center, and the Department of Spanish and Portuguese",
+      "fieldworkLabel": "Fieldwork:",
+      "fieldwork": "Los Gauchos Judíos team, led by Uriel Lin: Andrei Florian, Emily Mitnick, Daniel Levey, Marissa Hirschfield, Eve Shapiro, Florencia Chiaramonte.",
+      "archiveLabel": "Archive and website:",
+      "contact": "Contact us",
+      "privacy": "Privacy"
+    }
+  }
+}

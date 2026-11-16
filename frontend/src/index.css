@@ -518,3 +518,87 @@ html, body {
   background-color: #ebf2ef !important;
   box-shadow: inset 4px 0 0 #3e5a4d;
 }
+
+/* Language toggle (🇦🇷 ES | 🇺🇸 EN): two joined buttons, the current language filled in */
+.language-toggle {
+  display: inline-flex;
+  border: 1px solid #3e5a4d;
+  border-radius: 50rem;
+  overflow: hidden;
+  background-color: #ffffff;
+}
+
+.language-option {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  padding: 0.25rem 0.75rem;
+  border: none;
+  background: transparent;
+  color: #3e5a4d;
+  font-size: 0.85rem;
+  font-weight: 600;
+  letter-spacing: 0.5px;
+  line-height: 1.5;
+}
+
+/* The thin line between the two languages */
+.language-option + .language-option {
+  border-left: 1px solid #3e5a4d;
+}
+
+.language-option:hover {
+  background-color: #ebf2ef;
+}
+
+.language-option.is-active {
+  background-color: #3e5a4d;
+  color: #ffffff;
+}
+
+.language-flag {
+  font-size: 1rem;
+  line-height: 1;
+}
+
+/* On the hero's dark video: light borders and text, a translucent white for the current language */
+.language-toggle.on-dark {
+  border-color: rgba(255, 255, 255, 0.6);
+  background-color: transparent;
+}
+
+.language-toggle.on-dark .language-option {
+  color: #ffffff;
+}
+
+.language-toggle.on-dark .language-option + .language-option {
+  border-left-color: rgba(255, 255, 255, 0.6);
+}
+
+.language-toggle.on-dark .language-option:hover {
+  background-color: rgba(255, 255, 255, 0.1);
+}
+
+.language-toggle.on-dark .language-option.is-active {
+  background-color: rgba(255, 255, 255, 0.85);
+  color: #1a2321;
+}
+
+/* The toggle's place in the hero: top right, level with the wordmark on the left */
+.hero-language {
+  position: absolute;
+  top: 1.75rem;
+  right: 2.5rem;
+  z-index: 5;
+}
+
+/* Phones: pull the wordmark and the toggle towards the edges so they fit side by side */
+@media (max-width: 576px) {
+  .hero-wordmark {
+    left: 1rem;
+  }
+
+  .hero-language {
+    right: 1rem;
+  }
+}

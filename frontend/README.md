@@ -9,6 +9,12 @@ and styled with react-bootstrap (Bootstrap 5.3).
 | `/explore?q=…` | Name search and results (`src/ExplorePage.jsx`) |
 | `/record/:ref` | Placeholder for a grave's record, e.g. `/record/W-12-4` |
 
+The landing page is in English or Spanish: `?lang=es` in the URL picks
+Spanish (no `lang` means English), and the toggle in the hero switches it.
+The texts are in `src/locales/en.json` and `src/locales/es.json`, which hold
+the same keys; add any new text to both. The other pages are translated once
+their features are complete.
+
 ## Running it
 
 ```bash
