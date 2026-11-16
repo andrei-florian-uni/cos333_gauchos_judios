@@ -1,0 +1,18 @@
+# Conda environment for the stone mapping scripts.
+# Create it inside stone_mapping/ with:
+#   conda env create -p .conda -f environment.yml
+# and run a script from there with, for example:
+#   .conda/bin/python place_stones.py
+name: gauchos-stone-mapping
+channels:
+  - conda-forge
+dependencies:
+  - python=3.14
+  # Database access, with the address read from backend/.env
+  - psycopg
+  - python-dotenv
+  # Drawing the placements on the aerial for review
+  - pillow
+  # Code checks and tests
+  - pylint
+  - pytest
