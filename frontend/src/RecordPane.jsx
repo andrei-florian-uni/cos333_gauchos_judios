@@ -89,6 +89,11 @@ function RecordPane({ record, onClose }) {
     photo.cloudinary_public_id.toLowerCase().includes('portrait')
   );
 
+  // Filter out the portrait from the main carousel to prevent doubling
+  const carouselPhotos = portraitPhoto 
+    ? record.photos.filter(photo => photo.cloudinary_public_id !== portraitPhoto.cloudinary_public_id)
+    : record.photos;
+
   return (
     <div className="record-pane shadow rounded bg-white p-3 d-flex flex-column h-100">
       {/* Header Controls */}
@@ -134,7 +139,7 @@ function RecordPane({ record, onClose }) {
 
       {/* Cloudinary Photo Carousel */}
       <div className="d-flex gap-2 mb-4 overflow-auto pb-2">
-        {record.photos.map((photo) => (
+        {carouselPhotos.map((photo) => (
           <img
             key={photo.cloudinary_public_id}
             src={`https://res.cloudinary.com/l02apduh/image/upload/c_fill,w_120,h_120/v1/${photo.cloudinary_public_id}`}
