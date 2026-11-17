@@ -14,26 +14,30 @@
  * Nothing here touches React or Leaflet, so every function can be tested alone.
  */
 
+import { sectionName } from './labels.js';
+
 // ── Looks ───────────────────────────────────────────────────────────────────
 // One style per map state (N4). A search match and the selected grave are
 // drawn over their state's style. The fills are see-through, so the stones on
-// the aerial show inside their outlines.
+// the aerial show inside their outlines. A match and the selected grave also
+// get thicker borders, so they stand out for visitors who cannot tell the
+// colours apart.
 export const STATE_STYLES = {
   missing: {
-    label: 'Missing record', color: '#8f8a80', fillColor: '#dcd7cc', fillOpacity: 0.25, weight: 1.5, dashArray: '3 3',
+    key: 'missing', label: 'No record yet', color: '#8f8a80', fillColor: '#dcd7cc', fillOpacity: 0.25, weight: 1.5, dashArray: '3 3',
   },
   incomplete: {
-    label: 'Incomplete record', color: '#a8853a', fillColor: '#ead39b', fillOpacity: 0.4, weight: 1.5,
+    key: 'incomplete', label: 'Photos only', color: '#a8853a', fillColor: '#ead39b', fillOpacity: 0.4, weight: 1.5,
   },
   documented: {
-    label: 'Documented', color: '#2f4a3e', fillColor: '#93b4a2', fillOpacity: 0.35, weight: 1.5,
+    key: 'documented', label: 'Documented', color: '#2f4a3e', fillColor: '#93b4a2', fillOpacity: 0.35, weight: 1.5,
   },
 };
 export const MATCH_STYLE = {
-  label: 'Search match', color: '#1d4f91', fillColor: '#4c8ad6', fillOpacity: 0.6, weight: 2,
+  key: 'match', label: 'In your search', color: '#1d4f91', fillColor: '#4c8ad6', fillOpacity: 0.6, weight: 2.5,
 };
 export const SELECTED_STYLE = {
-  label: 'Selected', color: '#9c1f1a', fillColor: '#e2493f', fillOpacity: 0.7, weight: 3,
+  key: 'selected', label: 'Selected', color: '#7a1611', fillColor: '#e2493f', fillOpacity: 0.7, weight: 4,
 };
 
 // A shape that several graves share (an area for graves whose exact place is
@@ -44,6 +48,19 @@ const SHARED_FILL_SHARE = 0.35;
 export const LEGEND = [
   STATE_STYLES.missing, STATE_STYLES.incomplete, STATE_STYLES.documented, MATCH_STYLE, SELECTED_STYLE,
 ];
+
+/**
+ * Returns the legend's entries worth showing: the states some shape on the
+ * map is in (no grave is "Photos only" until photos are loaded, say), then the
+ * search match and the selection, which the visitor brings about.
+ *
+ * @param {Array<object>} shapes The shapes on the map (see groupShapes).
+ * @returns {Array<object>} The entries, in the legend's order.
+ */
+export function legendEntries(shapes) {
+  const present = new Set(shapes.map((shape) => shape.state));
+  return LEGEND.filter((entry) => !STATE_STYLES[entry.key] || present.has(entry.key));
+}
 
 /**
  * Returns the Leaflet path options for one grave.
@@ -318,4 +335,75 @@ export function boxArea(outline) {
   const xs = outline.map(([x]) => x);
   const ys = outline.map(([, y]) => y);
   return (Math.max(...xs) - Math.min(...xs)) * (Math.max(...ys) - Math.min(...ys));
+}
+
+// ── Labels ──────────────────────────────────────────────────────────────────
+// The large block of graves the team has not documented yet, as a share of the
+// aerial's width and height (stone_mapping/annotated_aerial.png shows its rows).
+const UNDOCUMENTED_AREA = { x: 0.49, y: 0.57 };
+const SECTION_LABEL_GAP = 45;   // pixels above a section's first graves
+const ROW_LABEL_GAP = 18;       // pixels past the end of a row
+
+/**
+ * Works out where the map writes its labels, in pixels of the aerial:
+ * • each section's name, centred above its numbered rows;
+ * • each numbered row's label, just past the far end of the row (the rows
+ *   run down the aerial, so below its lowest grave);
+ * • "Not yet documented" over the block of graves not documented yet.
+ * Rows without a number (MISC, MISC2) and children's row 0 are graves
+ * scattered on the outskirts (see CLAUDE.md › Stone mapping), and a grave on
+ * a shared area is not located yet, so these get no row label and are left
+ * out of the sections' extents.
+ *
+ * @param {Array<object>} graves The placed graves (section, row and outline).
+ * @param {?object} image The aerial's width and height, or null.
+ * @returns {{sections: Array<object>, rows: Array<object>, areas: Array<object>}}
+ *   Labels, each `{key, text, point}` with `point` as [x, y].
+ */
+export function mapLabels(graves, image) {
+  // A grave on a shared area (one outline for several graves not yet located)
+  // is not where its row is, so it must not stretch a section or a row either.
+  const outlineUses = new Map();
+  for (const grave of graves) {
+    const key = JSON.stringify(grave.outline);
+    outlineUses.set(key, (outlineUses.get(key) || 0) + 1);
+  }
+  const numbered = graves.filter((grave) => /^[1-9]/.test(grave.row) && grave.outline
+    && outlineUses.get(JSON.stringify(grave.outline)) === 1);
+  const bySection = new Map();
+  const byRow = new Map();
+  for (const grave of numbered) {
+    if (!bySection.has(grave.section)) bySection.set(grave.section, []);
+    bySection.get(grave.section).push(grave);
+    const rowKey = `${grave.section}|${grave.row}`;
+    if (!byRow.has(rowKey)) byRow.set(rowKey, []);
+    byRow.get(rowKey).push(grave);
+  }
+  // The box of some graves, as {minX, maxX, minY, maxY} in pixels.
+  const box = (members) => {
+    const points = members.flatMap((grave) => grave.outline);
+    const xs = points.map(([x]) => x);
+    const ys = points.map(([, y]) => y);
+    return { minX: Math.min(...xs), maxX: Math.max(...xs), minY: Math.min(...ys), maxY: Math.max(...ys) };
+  };
+  const sections = [...bySection].map(([section, members]) => {
+    const b = box(members);
+    return {
+      key: section,
+      text: sectionName(section),
+      point: [(b.minX + b.maxX) / 2, b.minY - SECTION_LABEL_GAP],
+    };
+  });
+  const rows = [...byRow].map(([rowKey, members]) => {
+    const b = box(members);
+    return { key: rowKey, text: members[0].row, point: [(b.minX + b.maxX) / 2, b.maxY + ROW_LABEL_GAP] };
+  });
+  const areas = image?.width && image?.height
+    ? [{
+      key: 'undocumented',
+      text: 'Not yet documented',
+      point: [image.width * UNDOCUMENTED_AREA.x, image.height * UNDOCUMENTED_AREA.y],
+    }]
+    : [];
+  return { sections, rows, areas };
 }

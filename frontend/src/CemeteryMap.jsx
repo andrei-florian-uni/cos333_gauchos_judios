@@ -26,12 +26,16 @@
  */
 
 import { memo, useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { MapContainer, Polygon, TileLayer, Tooltip, ZoomControl, useMap, useMapEvents } from 'react-leaflet';
+import {
+  MapContainer, Marker, Polygon, TileLayer, Tooltip, ZoomControl, useMap, useMapEvents,
+} from 'react-leaflet';
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
 import {
-  LEGEND, MAX_MAP_ZOOM, MIN_MAP_ZOOM, aerialTiles, boundsOfGraves, resolveLayout, shapeStyle,
+  MAX_MAP_ZOOM, MIN_MAP_ZOOM, aerialTiles, boundsOfGraves, legendEntries, mapLabels, resolveLayout,
+  shapeStyle,
 } from './mapLayout.js';
+import { personNames } from './labels.js';
 
 const ALLOW_DEMO_LAYOUT = import.meta.env.VITE_MAP_DEMO_LAYOUT === 'true';
 // The aerial's tiles ship with the site (cut by stone_mapping/make_tiles.py into public/tiles).
@@ -40,17 +44,71 @@ const EDGE_PADDING = 40;          // pixels kept free around whatever the map fo
 const MAX_FOCUS_ZOOM = 1;         // the closest the map zooms in on its own
 const MAX_COVERED_SHARE = 0.75;   // never treat more than this share of the map as covered
 const CHOOSER_ROOM = 280;         // pixels the chooser needs beside and below a click
+const ROW_LABEL_ZOOM = -1;        // row labels appear from this zoom in; farther out they crowd
 
 /**
- * Writes a person's name for the map: the Latin name, else the Hebrew one.
+ * Writes a person's name for the map: the Latin name, else the Hebrew one, as
+ * the results list and record pane write it (see labels.js).
  *
  * @param {object} person A person from /api/map/graves (the four name columns).
  * @returns {string} The name, or "Unidentified" when neither is on record.
  */
 function personName(person) {
-  const latin = [person.name_es, person.surname_es].filter(Boolean).join(' ');
-  const hebrew = [person.name_he, person.surname_he].filter(Boolean).join(' ');
-  return latin || hebrew || 'Unidentified';
+  return personNames(person).primary;
+}
+
+/**
+ * Makes the marker icon of one map label: its text, centred on the point.
+ *
+ * @param {string} text The label's text.
+ * @param {string} kind 'section', 'row' or 'area', which sets its style.
+ * @returns {L.DivIcon} The icon.
+ */
+function labelIcon(text, kind) {
+  const inner = document.createElement('span');
+  inner.textContent = text;            // as text, never as HTML
+  return L.divIcon({ className: `map-label map-label-${kind}`, html: inner, iconSize: [0, 0] });
+}
+
+/**
+ * The map's labels: section names and the block not yet documented always,
+ * and row numbers once the visitor zooms in far enough to read them. They
+ * cannot be clicked, so clicks reach the graves underneath.
+ *
+ * @param {object} props
+ * @param {{sections: Array<object>, rows: Array<object>, areas: Array<object>}} props.labels
+ *   The labels, from mapLabels in mapLayout.js.
+ * @returns {JSX.Element} The labels as markers.
+ */
+function MapLabels({ labels }) {
+  const map = useMap();
+  const [zoom, setZoom] = useState(() => map.getZoom());
+  useMapEvents({ zoomend: () => setZoom(map.getZoom()) });
+  // One icon per label, made again only when the labels change.
+  const icons = useMemo(() => {
+    const made = new Map();
+    for (const [kind, list] of [['section', labels.sections], ['row', labels.rows], ['area', labels.areas]]) {
+      for (const label of list) made.set(`${kind}|${label.key}`, labelIcon(label.text, kind));
+    }
+    return made;
+  }, [labels]);
+
+  const marker = (kind) => (label) => (
+    <Marker
+      key={`${kind}|${label.key}`}
+      position={[-label.point[1], label.point[0]]}
+      icon={icons.get(`${kind}|${label.key}`)}
+      interactive={false}
+      keyboard={false}
+    />
+  );
+  return (
+    <>
+      {labels.areas.map(marker('area'))}
+      {labels.sections.map(marker('section'))}
+      {zoom >= ROW_LABEL_ZOOM && labels.rows.map(marker('row'))}
+    </>
+  );
 }
 
 /**
@@ -259,26 +317,47 @@ function SharedStoneChooser({ chooser, onPick, onClose }) {
 }
 
 /**
- * The legend of the map's colours (N4).
+ * The legend of the map's colours (N4), listing only the states on the map.
+ * It folds away to a small button, so it can be moved out of the way, and
+ * starts folded on a phone.
  *
- * @returns {JSX.Element} One swatch and label per state.
+ * @param {object} props
+ * @param {Array<object>} props.shapes The shapes on the map.
+ * @returns {JSX.Element} The legend.
  */
-function MapLegend() {
+function MapLegend({ shapes }) {
+  // Open on a wide screen; folded on a phone, where the map has little room.
+  const [open, setOpen] = useState(() => !window.matchMedia?.('(max-width: 767.98px)').matches);
+  const entries = useMemo(() => legendEntries(shapes), [shapes]);
   return (
-    <div className="map-legend shadow-sm" aria-label="Map legend">
-      {LEGEND.map((entry) => (
-        <div key={entry.label} className="d-flex align-items-center gap-2">
-          <span
-            className="map-legend-swatch"
-            style={{
-              backgroundColor: entry.fillColor,
-              borderColor: entry.color,
-              borderStyle: entry.dashArray ? 'dashed' : 'solid',
-            }}
-          />
-          {entry.label}
+    <div className="map-legend shadow-sm">
+      <button
+        type="button"
+        className="map-legend-toggle"
+        aria-expanded={open}
+        aria-controls="map-legend-entries"
+        onClick={() => setOpen((isOpen) => !isOpen)}
+      >
+        Legend <span aria-hidden="true">{open ? '▾' : '▸'}</span>
+      </button>
+      {open && (
+        <div id="map-legend-entries" className="mt-1">
+          {entries.map((entry) => (
+            <div key={entry.key} className="d-flex align-items-center gap-2">
+              <span
+                className="map-legend-swatch"
+                style={{
+                  backgroundColor: entry.fillColor,
+                  borderColor: entry.color,
+                  borderStyle: entry.dashArray ? 'dashed' : 'solid',
+                  borderWidth: entry.weight >= 4 ? '3px' : '2px',
+                }}
+              />
+              {entry.label}
+            </div>
+          ))}
         </div>
-      ))}
+      )}
     </div>
   );
 }
@@ -307,6 +386,11 @@ function CemeteryMap({ mapData, loadError, matchRefs, selectedRef, onOpenRecord,
   const layout = useMemo(
     () => (mapData ? resolveLayout(mapData, ALLOW_DEMO_LAYOUT) : null),
     [mapData],
+  );
+  // The labels, on the aerial only: the demo grid's rows are not where the real ones are.
+  const labels = useMemo(
+    () => (layout && !layout.demo ? mapLabels(layout.graves, mapData.image) : null),
+    [layout, mapData],
   );
   // The whole drawing, as Leaflet bounds; the same array while the layout is.
   // The aerial's tile layer, or null when there is none to draw (demo grid, no size).
@@ -367,6 +451,7 @@ function CemeteryMap({ mapData, loadError, matchRefs, selectedRef, onOpenRecord,
               onClick={handleShapeClick}
             />
           ))}
+          {labels && <MapLabels labels={labels} />}
           <MapFocus fullBounds={fullBounds} graves={layout.graves} selectedRef={selectedRef} matchRefs={matchRefs} coveredRef={coveredRef} />
           <ChooserCloser onClose={closeChooser} />
         </MapContainer>
@@ -394,7 +479,7 @@ function CemeteryMap({ mapData, loadError, matchRefs, selectedRef, onOpenRecord,
       {!layout && !loadError && <div className="map-notice" role="status">Loading the cemetery map…</div>}
       {loadError && <div className="map-notice map-notice-error" role="alert">{loadError}</div>}
 
-      {layout && <MapLegend />}
+      {layout && <MapLegend shapes={layout.shapes} />}
     </div>
   );
 }

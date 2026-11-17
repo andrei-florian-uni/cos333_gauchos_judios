@@ -29,6 +29,7 @@ import CemeteryMap from './CemeteryMap.jsx';
 import FiltersMenu from './FiltersMenu.jsx';
 import RecordPane from './RecordPane.jsx';
 import { describeYears } from './recordDates.js';
+import { matchQuality, personNames } from './labels.js';
 import {
   NO_FILTERS, clearFilters, describeFilters, hasFilters, passesFilters, readFilters,
   searchParamsFor,
@@ -39,16 +40,6 @@ const PAGE_SIZE = 50;
 
 /** No graves to highlight; one Set for good, so the map is not told of a change. */
 const NO_MATCHES = new Set();
-
-/**
- * Joins the non-empty parts of a name with spaces.
- *
- * @param {...?string} parts Name parts, any of which may be null.
- * @returns {string} The joined name, or an empty string.
- */
-function joinName(...parts) {
-  return parts.filter(Boolean).join(' ');
-}
 
 /**
  * Describes where a grave is, e.g. "Women · Row 12 · Stone 4".
@@ -338,7 +329,8 @@ function ExplorePage() {
     <div className="explore-page">
       <header className="explore-header">
         <Link to="/" className="explore-home">&larr; Home</Link>
-        <span className="explore-title">Gauchos Judíos · Cemetery explorer</span>
+        <span className="explore-wordmark">Los Gauchos Judíos</span>
+        <span className="explore-title">Cemetery explorer</span>
       </header>
 
       <div className="explore-body">
@@ -351,7 +343,8 @@ function ExplorePage() {
           coveredRef={panelsRef}
         />
 
-        <div className="explore-panels" ref={panelsRef}>
+        {/* `record-open` lets a phone show the record in place of the search */}
+        <div className={`explore-panels${paneOpen ? ' record-open' : ''}`} ref={panelsRef}>
           {/* Search panel (N2, N3) */}
           <section className="explore-panel" aria-label="Search">
             <h2 className="h5 mb-0">Archive search</h2>
@@ -400,8 +393,8 @@ function ExplorePage() {
                   </p>
                   <ul className="result-list">
                     {rows.slice(0, visibleCount).map((person) => {
-                      const latin = joinName(person.name_es, person.surname_es);
-                      const hebrew = joinName(person.name_he, person.surname_he);
+                      const names = personNames(person);
+                      const quality = isNameSearch ? matchQuality(person.score, urlQuery) : null;
                       const isSelected = selectedRecord?.person_id === person.person_id;
                       return (
                         <li key={person.person_id}>
@@ -412,13 +405,25 @@ function ExplorePage() {
                             onClick={() => openRecord(person.ref, person.person_id)}
                           >
                             <span className="d-flex justify-content-between gap-2">
-                              <span className="fw-bold">{latin || '—'}</span>
-                              <span dir="rtl" lang="he">{hebrew}</span>
+                              {/* A stone with only a Hebrew name shows it as the name, right to left */}
+                              <span
+                                className="fw-bold"
+                                dir={names.primaryIsHebrew ? 'rtl' : undefined}
+                                lang={names.primaryIsHebrew ? 'he' : undefined}
+                              >
+                                {names.primary}
+                              </span>
+                              {names.secondary && <span dir="rtl" lang="he">{names.secondary}</span>}
                             </span>
                             <span className="d-flex justify-content-between gap-2 small text-muted">
                               <span>{describeGrave(person)} · {describeYears(person)}</span>
-                              {isNameSearch && (
-                                <span className="badge bg-secondary align-self-center">{person.score.toFixed(2)}</span>
+                              {quality && (
+                                <span
+                                  className={`match-badge match-${quality.tone} align-self-center`}
+                                  title={`Search score ${person.score.toFixed(2)}`}
+                                >
+                                  {quality.label}
+                                </span>
                               )}
                             </span>
                           </button>

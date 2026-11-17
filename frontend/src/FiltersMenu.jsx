@@ -13,7 +13,7 @@
  */
 
 import { useState } from 'react';
-import { Button, CloseButton, Dropdown, Form } from 'react-bootstrap';
+import { Button, CloseButton, Dropdown, Form, OverlayTrigger, Tooltip } from 'react-bootstrap';
 import {
   BIRTH_SLIDER, DEATH_SLIDER, NO_FILTERS, SECTIONS, describeFilters, describeYearRange,
 } from './searchFilters.js';
@@ -208,10 +208,23 @@ function FiltersForm({ filters, onApply, onClose }) {
         />
       </Form.Group>
 
-      <p className="small text-muted">
-        Left at its full range, a slider means any year. Dates worked out from
-        a Hebrew date or an age at death count when their range touches the
-        years chosen. People with no date on record drop out once a slider moves.
+      {/* One line in view; how the year sliders treat each date is in the tooltip */}
+      <p className="small text-muted d-flex align-items-center gap-2">
+        A slider at its full range means any year.
+        <OverlayTrigger
+          placement="top"
+          overlay={(
+            <Tooltip id="filters-years-help">
+              Dates worked out from a Hebrew date or an age at death count when
+              their range touches the years chosen. People with no date on
+              record drop out once a slider moves.
+            </Tooltip>
+          )}
+        >
+          <button type="button" className="filters-help" aria-label="How the year filters work">
+            <span aria-hidden="true">i</span>
+          </button>
+        </OverlayTrigger>
       </p>
 
       <div className="d-flex justify-content-between align-items-center border-top pt-3">

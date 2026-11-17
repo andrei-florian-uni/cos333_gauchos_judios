@@ -1,7 +1,8 @@
 /**
  * Landing page (/): the public introduction to the archive, regions H1–H5 of
- * the Project Design. A hero over the background video with the map and
- * "Learn more" buttons and a name search (H1, H2), the community's history
+ * the Project Design. A hero over the background video (or, until the video is
+ * hosted, a still aerial photo) with the map and "Learn more" buttons and a
+ * name search (H1, H2), the community's history
  * and a carousel of fieldwork photos (H3), a two-sided timeline (H4), and a
  * footer with sources, credits, contact and privacy links (H5).
  *
@@ -17,7 +18,7 @@
 
 import { useState, useRef, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Container, Row, Col, Button, Form, Carousel } from 'react-bootstrap';
+import { Container, Row, Col, Button, Form, Carousel, InputGroup } from 'react-bootstrap';
 import { useTranslation } from 'react-i18next';
 import LanguageToggle from './LanguageToggle.jsx';
 
@@ -30,6 +31,9 @@ import img5 from './assets/carousel_05_row_by_row.jpg';
 import img6 from './assets/carousel_06_interview.jpg';
 import img7 from './assets/carousel_07_station.jpg';
 import img8 from './assets/carousel_08_team.jpg';
+// The hero's still: shown while the video loads, and in its place while the
+// video is not hosted (it is kept out of git until it moves to Cloudinary).
+import heroStill from './assets/hero_still.jpg';
 
 // Carousel slides (H3): each photo and the key of its title and caption in
 // the locale files (landing.carousel.slides.<key>).
@@ -130,7 +134,14 @@ function LandingPage() {
   }
 
   // Fade each history block and timeline card in once 15% of it is on screen.
+  // A browser without IntersectionObserver, or a visitor who asks for reduced
+  // motion, sees them at once instead: content must never stay hidden.
   useEffect(() => {
+    const reduceMotion = window.matchMedia?.('(prefers-reduced-motion: reduce)').matches;
+    if (reduceMotion || !('IntersectionObserver' in window)) {
+      observerRefs.current.forEach((node) => node.classList.add('is-visible'));
+      return undefined;
+    }
     const observer = new IntersectionObserver((entries) => {
       entries.forEach(entry => {
         if (entry.isIntersecting) entry.target.classList.add('is-visible');
@@ -145,12 +156,12 @@ function LandingPage() {
 
   return (
     <main>
-      <section className="hero-section">
+      <section className="hero-section" style={{ backgroundImage: `url(${heroStill})` }}>
         <div className="hero-wordmark">Los Gauchos Judíos</div>
         <div className="hero-language">
           <LanguageToggle onDark />
         </div>
-        <video ref={videoRef} className="hero-video" autoPlay loop muted playsInline>
+        <video ref={videoRef} className="hero-video" poster={heroStill} autoPlay loop muted playsInline>
           <source src="/video_header_3.mp4" type="video/mp4" />
         </video>
         <div className="hero-overlay"></div>
@@ -176,14 +187,23 @@ function LandingPage() {
               </div>
 
               <div className="hero-search-wrapper">
-                <Form onSubmit={handleSearchSubmit}>
-                  <Form.Control 
-                    type="search" 
-                    className="hero-search-input" 
-                    placeholder={t('common.searchPlaceholder')}
-                    value={searchQuery}
-                    onChange={(e) => setSearchQuery(e.target.value)} 
-                  />
+                <Form onSubmit={handleSearchSubmit} role="search">
+                  <InputGroup>
+                    <Form.Control
+                      type="search"
+                      className="hero-search-input"
+                      placeholder={t('common.searchPlaceholder')}
+                      aria-label={t('common.searchPlaceholder')}
+                      value={searchQuery}
+                      onChange={(e) => setSearchQuery(e.target.value)}
+                    />
+                    <Button type="submit" className="hero-search-button" aria-label={t('common.searchButton')}>
+                      <svg width="18" height="18" fill="currentColor" viewBox="0 0 16 16" aria-hidden="true">
+                        <path d="M11.742 10.344a6.5 6.5 0 1 0-1.397 1.398l3.85 3.85a1 1 0 0 0 1.415-1.414l-3.85-3.85zM12 6.5a5.5 5.5 0 1 1-11 0 5.5 5.5 0 0 1 11 0z" />
+                      </svg>
+                      <span className="ms-2 d-none d-sm-inline">{t('common.searchButton')}</span>
+                    </Button>
+                  </InputGroup>
                 </Form>
               </div>
             </Col>

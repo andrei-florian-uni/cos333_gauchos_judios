@@ -18,6 +18,9 @@ html, body {
   position: relative;
   min-height: 85vh;
   background-color: #1a2321;
+  /* The still aerial (set inline by LandingPage.jsx) shows wherever the video does not */
+  background-size: cover;
+  background-position: center;
   color: #ffffff;
   display: flex;
   align-items: center;
@@ -72,7 +75,8 @@ html, body {
 
 .hero-title {
   font-family: Georgia, "Times New Roman", Times, serif;
-  font-size: 4.5rem;
+  /* Scales with the screen, so "Cementerio Israelita" never runs off a phone */
+  font-size: clamp(2.4rem, 8.5vw, 4.5rem);
   font-weight: bold;
   line-height: 1.1;
   margin-bottom: 0.5rem;
@@ -80,7 +84,7 @@ html, body {
 
 .hero-subtitle-line {
   font-family: Georgia, "Times New Roman", Times, serif;
-  font-size: 2.5rem;
+  font-size: clamp(1.5rem, 5vw, 2.5rem);
   font-weight: normal;
   margin-bottom: 1.5rem;
 }
@@ -95,7 +99,22 @@ html, body {
   border: none;
   padding: 0.9rem 1.2rem;
   font-size: 1.1rem;
-  border-radius: 0.375rem;
+}
+
+/* The search box's button, joined to its right edge */
+.hero-search-button,
+.hero-search-button:hover,
+.hero-search-button:focus {
+  display: inline-flex;
+  align-items: center;
+  padding: 0 1.25rem;
+  background-color: #3e5a4d;
+  border-color: #3e5a4d;
+  font-weight: 600;
+}
+
+.hero-search-button:hover {
+  background-color: #324a3f;
 }
 
 .video-pause-btn {
@@ -825,6 +844,202 @@ html, body {
   }
 
   .map-legend {
+    display: none;
+  }
+}
+
+/* ── Motion: visitors who ask for less of it see every section at once ───── */
+@media (prefers-reduced-motion: reduce) {
+  .info-block,
+  .timeline-card {
+    opacity: 1;
+    transform: none;
+    transition: none;
+  }
+
+  html {
+    scroll-behavior: auto;
+  }
+}
+
+/* ── Explore header: the same wordmark as the landing page ───────────────── */
+.explore-wordmark {
+  font-weight: 600;
+  letter-spacing: 0.5px;
+}
+
+.explore-header .explore-title {
+  font-family: inherit;
+  opacity: 0.7;
+  margin-left: -0.5rem;
+}
+
+.explore-header .explore-title::before {
+  content: "·";
+  margin-right: 0.75rem;
+}
+
+/* ── Record pane header ──────────────────────────────────────────────────── */
+.record-name {
+  font-family: Georgia, "Times New Roman", Times, serif;
+  font-weight: bold;
+}
+
+.record-name-hebrew {
+  font-family: Georgia, "Times New Roman", Times, serif;
+  color: #4a4a4a;
+}
+
+.record-dates {
+  font-size: 1rem;
+  color: #3e5a4d;
+  font-weight: 600;
+}
+
+.record-photos-note {
+  padding: 0.6rem 0.75rem;
+  background-color: #f4efe4;
+  border-radius: 0.375rem;
+}
+
+/* A field with no value on record, shown redacted: a short grey bar */
+.redacted {
+  display: inline-block;
+  width: 4.5rem;
+  height: 0.7rem;
+  background-color: #e3dccd;
+  border-radius: 2px;
+  vertical-align: middle;
+}
+
+/* ── How well a search matched, in words ─────────────────────────────────── */
+.match-badge {
+  padding: 0.1rem 0.45rem;
+  border-radius: 50rem;
+  font-size: 0.72rem;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.match-exact {
+  background-color: #3e5a4d;
+  color: #ffffff;
+}
+
+.match-close {
+  background-color: #dbe7e0;
+  color: #2f4a3e;
+}
+
+.match-possible {
+  background-color: #efe9dc;
+  color: #6b6455;
+}
+
+/* The info button beside the Filters pop-up's hint */
+.filters-help {
+  flex: 0 0 auto;
+  width: 1.2rem;
+  height: 1.2rem;
+  padding: 0;
+  border: 1px solid #a39b8b;
+  border-radius: 50%;
+  background: none;
+  color: #6b6455;
+  font-size: 0.7rem;
+  font-weight: 700;
+  line-height: 1;
+}
+
+/* ── Map labels ──────────────────────────────────────────────────────────── */
+/* The marker is a zero-size point; its text is centred on it. */
+.map-label > span {
+  position: absolute;
+  transform: translate(-50%, -50%);
+  white-space: nowrap;
+  pointer-events: none;
+  color: #ffffff;
+  text-shadow: 0 0 3px rgba(0, 0, 0, 0.9), 0 0 6px rgba(0, 0, 0, 0.6);
+}
+
+.map-label-section > span {
+  font-family: Georgia, "Times New Roman", Times, serif;
+  font-size: 1.05rem;
+  font-weight: bold;
+  letter-spacing: 0.3px;
+}
+
+.map-label-row > span {
+  font-size: 0.7rem;
+  font-weight: 700;
+}
+
+.map-label-area > span {
+  padding: 0.2rem 0.6rem;
+  font-size: 0.8rem;
+  font-style: italic;
+  background-color: rgba(26, 35, 33, 0.55);
+  border-radius: 50rem;
+  text-shadow: none;
+}
+
+/* The legend's fold button */
+.map-legend-toggle {
+  padding: 0;
+  border: none;
+  background: none;
+  font-weight: 600;
+  font-size: 0.8rem;
+  color: inherit;
+}
+
+/* ── Phones: an open record takes the search panel's place ─────────────── */
+@media (max-width: 767.98px) {
+  .explore-panels.record-open > .explore-panel:first-child {
+    display: none;
+  }
+
+  .explore-panels.record-open .explore-record {
+    max-height: 100%;
+  }
+
+  .map-legend {
+    display: block;
+    top: 12px;
+    bottom: auto;
+    left: 12px;
+    right: auto;
+  }
+}
+
+/* ── Record details: as many columns as fit, never squeezing a date ─────── */
+.detail-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+  gap: 0.75rem 1.5rem;
+}
+
+/* Relatives: the Latin name and the Hebrew one side by side */
+.detail-grid-pairs {
+  grid-template-columns: 1fr 1fr;
+}
+
+.detail-wide {
+  grid-column: 1 / -1;
+}
+
+.detail-field {
+  margin-bottom: 0.25rem;
+}
+
+/* ── Phones: the explore header stays on one line ────────────────────────── */
+@media (max-width: 575.98px) {
+  .explore-header {
+    white-space: nowrap;
+    gap: 0.9rem;
+  }
+
+  .explore-header .explore-title {
     display: none;
   }
 }

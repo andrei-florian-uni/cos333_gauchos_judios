@@ -2,11 +2,12 @@
   "common": {
     "siteTitle": "Los Gauchos Judíos · Cemetery archive",
     "languageToggle": "Language",
-    "searchPlaceholder": "Search for a name..."
+    "searchPlaceholder": "Search for a name...",
+    "searchButton": "Search"
   },
   "landing": {
     "hero": {
-      "lead": "Resting place of the Jewish families who farmed Colonia Lucienville from 1894. 794 of its graves are now photographed and searchable by name.",
+      "lead": "Resting place of the Jewish families who farmed Colonia Lucienville from 1894. 788 of its graves are now photographed and searchable by name.",
       "exploreMap": "Explore the cemetery map",
       "learnMore": "Learn more",
       "pauseVideo": "Pause",
@@ -23,7 +24,7 @@
         "p2": "The cemetery consists of a men's section, a women's section, and a children's section. The newer parts of the cemetery mix somewhat, but the layout largely follows this traditional separation. The headstones are inscribed in Spanish, Hebrew and Yiddish, and include valuable records that shed light on a community in transition, from its Eastern European shtetl roots, to its modernization and secularization which followed. Today, the cemetery is cared for by the Jewish community of Basavilbaso (Asociación Israelita Basavilbaso)."
       },
       "project": {
-        "p1": "In January 2026, a team of Princeton students traveled to Basavilbaso, with support from the Princeton Institute for International and Regional Studies (PIIRS), the Effron Center, and the Department of Spanish and Portuguese. In collaboration with local caretakers and stakeholders in the Jewish community of Argentina, they cleaned and photographed 794 graves, covering the women's and children's sections of the cemetery.",
+        "p1": "In January 2026, a team of Princeton students traveled to Basavilbaso, with support from the Princeton Institute for International and Regional Studies (PIIRS), the Effron Center, and the Department of Spanish and Portuguese. In collaboration with local caretakers and stakeholders in the Jewish community of Argentina, they cleaned and photographed 788 graves, covering the women's and children's sections of the cemetery.",
         "p2": "The photos were then sorted and transcribed using AI tools and checked by hand. A student team was formed to transform the records into a publicly accessible archive, where anyone can search for a name in Spanish or Hebrew, or explore the aerial map of the cemetery. The men's section will be documented and added to the archive in the future.",
         "sourcesLink": "Sources are listed at the bottom of the page"
       }
@@ -106,7 +107,7 @@
         "fieldwork": {
           "date": "January 2026",
           "title": "Fieldwork",
-          "desc": "A Princeton team photographs 794 graves in the women's and children's sections."
+          "desc": "A Princeton team photographs 788 graves in the women's and children's sections."
         },
         "building": {
           "date": "March 2026 - December 2026",

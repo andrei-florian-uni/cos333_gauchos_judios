@@ -2,16 +2,19 @@
  * Gravestone Record View (N8): a detail panel showing a person's names, dates,
  * age at death, relatives, and epitaph in Spanish and Hebrew, alongside photos.
  *
- * Every grave uses the same layout, and a field with no value on record is
- * shown as "not on record" (Project Design › Application Interface). A date
- * worked out rather than carved is shown as a range, with a note saying where
- * it comes from. The photo tiles and the Share button are placeholders until
- * Cloudinary and shared links (N5) are in place.
+ * The header gives the name (the Hebrew one first when the stone carries no
+ * Latin name), the years and the Hebrew date of death, and where the grave
+ * is. Every grave uses the same layout, and a field with no value on record is
+ * shown redacted, as a quiet grey bar (Project Design › Application
+ * Interface). A date worked out rather than carved is shown as a range, with a
+ * note saying where it comes from. Until photos are on Cloudinary a note says
+ * so in their place; the Share button is a placeholder until shared links (N5).
  */
 
 import { useState } from 'react';
 import { Button, Collapse } from 'react-bootstrap';
-import { formatHebrewDate, formatPersonDate, hasValue, isDerivedDate } from './recordDates.js';
+import { describeYears, formatHebrewDate, formatPersonDate, hasValue, isDerivedDate } from './recordDates.js';
+import { describeLocation, displayLatinName, personNames } from './labels.js';
 
 /** The note under a derived date, saying where it comes from. */
 const DERIVED_NOTES = {
@@ -20,18 +23,9 @@ const DERIVED_NOTES = {
 };
 
 /**
- * Joins the non-empty parts of a name with spaces.
- *
- * @param {...?string} parts Name parts, any of which may be null.
- * @returns {string} The joined name, or an empty string.
- */
-function joinName(...parts) {
-  return parts.filter(Boolean).join(' ');
-}
-
-/**
  * One labelled field of the Additional details section. A missing value is
- * shown as redacted ("not on record"); zero is a value and is shown.
+ * shown redacted: a grey bar, read out as "Not on record" by screen readers;
+ * zero is a value and is shown.
  *
  * @param {object} props
  * @param {string} props.label The field's name.
@@ -39,11 +33,12 @@ function joinName(...parts) {
  * @param {boolean} [props.isHebrew] Whether the value is Hebrew, set right to left.
  * @param {?string} [props.note] A remark shown in small type under the value,
  *   e.g. where a derived date comes from.
+ * @param {boolean} [props.wide] Whether it takes a whole row of the grid.
  * @returns {JSX.Element} The label and its value.
  */
-function DetailField({ label, value, isHebrew = false, note = null }) {
+function DetailField({ label, value, isHebrew = false, note = null, wide = false }) {
   return (
-    <div className="mb-2">
+    <div className={wide ? 'detail-field detail-wide' : 'detail-field'}>
       <div className="fw-semibold small text-muted mb-1">{label}</div>
       {hasValue(value) ? (
         <>
@@ -53,8 +48,8 @@ function DetailField({ label, value, isHebrew = false, note = null }) {
           {note && <div className="small text-muted">{note}</div>}
         </>
       ) : (
-        <span className="badge bg-light text-secondary border border-secondary-subtle">
-          not on record
+        <span className="redacted" title="Not on record">
+          <span className="visually-hidden">Not on record</span>
         </span>
       )}
     </div>
@@ -73,9 +68,9 @@ function DetailField({ label, value, isHebrew = false, note = null }) {
 function RecordPane({ record, onClose }) {
   const [detailsOpen, setDetailsOpen] = useState(false);
 
-  const latinName = joinName(record.name_es, record.surname_es);
-  const hebrewName = joinName(record.name_he, record.surname_he);
-  const sectionLabel = record.section.charAt(0).toUpperCase() + record.section.slice(1);
+  const names = personNames(record);
+  const location = describeLocation(record);
+  const years = describeYears(record);
   const birthDate = formatPersonDate(record, 'birth');
   const deathDate = formatPersonDate(record, 'death');
   const birthNote = isDerivedDate(record, 'birth') ? DERIVED_NOTES.birth : null;
@@ -101,34 +96,45 @@ function RecordPane({ record, onClose }) {
         </div>
       </div>
 
-      {/* Top Section: Names & Location */}
-      <div className="d-flex justify-content-between align-items-start mb-3">
-        {/* Placeholder for portrait */}
-        <div className="bg-light border rounded" style={{ width: '60px', height: '80px', flexShrink: 0 }}></div>
-
-        <div className="ms-3 flex-grow-1">
-          <div className="d-flex justify-content-between w-100">
-            <h3 className="h5 fw-bold mb-1">{latinName || 'Unidentified'}</h3>
-            <h3 className="h5 mb-1" dir="rtl" lang="he">{hebrewName}</h3>
-          </div>
-          <hr className="my-2" style={{ borderColor: '#d4cbb8' }} />
-          <div className="text-muted small">
-            {sectionLabel} &middot; Row {record.row} &middot; Stone {record.stone}
-          </div>
+      {/* Header (N8): name, Hebrew name, dates and location */}
+      <div className="mb-3">
+        <div className="d-flex justify-content-between align-items-baseline gap-3 flex-wrap">
+          <h3
+            className="record-name h4 mb-1"
+            dir={names.primaryIsHebrew ? 'rtl' : undefined}
+            lang={names.primaryIsHebrew ? 'he' : undefined}
+          >
+            {names.primary}
+          </h3>
+          {names.secondary && (
+            <div className="record-name-hebrew h5 mb-1" dir="rtl" lang="he">{names.secondary}</div>
+          )}
         </div>
+        <div className="record-dates">
+          {years !== '—' && <span>{years}</span>}
+          {years !== '—' && hebrewDeathDate && <span className="mx-2 text-muted">&middot;</span>}
+          {hebrewDeathDate && <span>{hebrewDeathDate}</span>}
+        </div>
+        <hr className="my-2" style={{ borderColor: '#d4cbb8' }} />
+        <div className="text-muted small">{location}</div>
       </div>
 
-      {/* Photos Placeholder: one empty tile per photo until Cloudinary is set up */}
-      <div className="d-flex gap-2 mb-4 overflow-auto pb-2">
-        {record.photos.map((photo) => (
-          <div
-            key={photo.cloudinary_public_id}
-            className="bg-light border rounded flex-shrink-0"
-            style={{ width: '120px', height: '120px', cursor: 'pointer' }}
-            title="Click to open lightbox (Mock)"
-          ></div>
-        ))}
-      </div>
+      {/* Photos: one tile per photo once they are on Cloudinary; a note until then */}
+      {record.photos.length > 0 ? (
+        <div className="d-flex gap-2 mb-4 overflow-auto pb-2">
+          {record.photos.map((photo) => (
+            <div
+              key={photo.cloudinary_public_id}
+              className="bg-light border rounded flex-shrink-0"
+              style={{ width: '120px', height: '120px' }}
+            ></div>
+          ))}
+        </div>
+      ) : (
+        <p className="record-photos-note small text-muted mb-4">
+          Photographs of this stone will appear here soon.
+        </p>
+      )}
 
       {/* Additional Details Accordion */}
       <div className="mt-auto">
@@ -146,32 +152,23 @@ function RecordPane({ record, onClose }) {
         </Button>
 
         <Collapse in={detailsOpen}>
-          <div id="additional-details-collapse" className="pt-2 border-top">
-            <div className="d-flex gap-4 mb-3">
-              <div className="flex-grow-1">
-                <DetailField label="Birth date" value={birthDate} note={birthNote} />
-                <DetailField label="Age at death" value={record.age_of_death} />
-              </div>
-              <div className="flex-grow-1">
-                <DetailField label="Date of death" value={deathDate} note={deathNote} />
-                <DetailField label="Location (fixed)" value={`Row ${record.row} · Position ${record.stone}`} />
-              </div>
-              <div className="flex-grow-1">
-                <DetailField label="Hebrew date of death" value={hebrewDeathDate} />
-              </div>
+          <div id="additional-details-collapse" className="pt-3 border-top">
+            {/* Dates and place, then relatives (Latin beside Hebrew), then the epitaph */}
+            <div className="detail-grid mb-3">
+              <DetailField label="Birth date" value={birthDate} note={birthNote} />
+              <DetailField label="Date of death" value={deathDate} note={deathNote} />
+              <DetailField label="Hebrew date of death" value={hebrewDeathDate} />
+              <DetailField label="Age at death" value={record.age_of_death} />
+              <DetailField label="Location" value={location} wide />
             </div>
 
-            <div className="d-flex gap-4 mb-3">
-              <div className="flex-grow-1">
-                <DetailField label="Father's name" value={record.father_name_es} />
-                <DetailField label="Husband's name" value={record.husband_name_es} />
-                <DetailField label="Maiden name" value={record.maiden_name_es} />
-              </div>
-              <div className="flex-grow-1">
-                <DetailField label="Father's name (Hebrew)" value={record.father_name_he} isHebrew={true} />
-                <DetailField label="Husband's name (Hebrew)" value={record.husband_name_he} isHebrew={true} />
-                <DetailField label="Maiden name (Hebrew)" value={record.maiden_name_he} isHebrew={true} />
-              </div>
+            <div className="detail-grid detail-grid-pairs mb-3">
+              <DetailField label="Father's name" value={displayLatinName(record.father_name_es)} />
+              <DetailField label="Father's name (Hebrew)" value={record.father_name_he} isHebrew={true} />
+              <DetailField label="Husband's name" value={displayLatinName(record.husband_name_es)} />
+              <DetailField label="Husband's name (Hebrew)" value={record.husband_name_he} isHebrew={true} />
+              <DetailField label="Maiden name" value={displayLatinName(record.maiden_name_es)} />
+              <DetailField label="Maiden name (Hebrew)" value={record.maiden_name_he} isHebrew={true} />
             </div>
 
             <DetailField label="Epitaph (as on the stone, Spanish and Hebrew)" value={record.epitaph} />
