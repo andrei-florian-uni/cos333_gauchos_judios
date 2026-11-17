@@ -84,6 +84,11 @@ function RecordPane({ record, onClose }) {
     record.death_day_he, record.death_month_he, record.death_year_he,
   );
 
+  // Look for a photo whose filename/public_id contains the word 'portrait'
+  const portraitPhoto = record.photos.find(photo => 
+    photo.cloudinary_public_id.toLowerCase().includes('portrait')
+  );
+
   return (
     <div className="record-pane shadow rounded bg-white p-3 d-flex flex-column h-100">
       {/* Header Controls */}
@@ -103,8 +108,17 @@ function RecordPane({ record, onClose }) {
 
       {/* Top Section: Names & Location */}
       <div className="d-flex justify-content-between align-items-start mb-3">
-        {/* Placeholder for portrait */}
-        <div className="bg-light border rounded" style={{ width: '60px', height: '80px', flexShrink: 0 }}></div>
+        {/* Portrait slot: Shows the portrait if found, otherwise the empty gray box */}
+        {portraitPhoto ? (
+          <img
+            src={`https://res.cloudinary.com/l02apduh/image/upload/c_fill,w_60,h_80/v1/${portraitPhoto.cloudinary_public_id}`}
+            alt="Portrait detail"
+            className="border rounded flex-shrink-0 shadow-sm"
+            style={{ width: '60px', height: '80px', objectFit: 'cover' }}
+          />
+        ) : (
+          <div className="bg-light border rounded flex-shrink-0" style={{ width: '60px', height: '80px' }}></div>
+        )}
 
         <div className="ms-3 flex-grow-1">
           <div className="d-flex justify-content-between w-100">
