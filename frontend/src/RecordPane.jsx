@@ -89,14 +89,14 @@ function RecordPane({ record, onClose }) {
       {/* Header Controls */}
       <div className="d-flex justify-content-between align-items-center mb-4">
         <Button variant="link" className="p-0 text-decoration-none text-secondary fw-semibold" onClick={onClose}>
-          &larr; Results
+          ← Results
         </Button>
         <div>
           <Button variant="outline-secondary" size="sm" className="me-2">
             Share
           </Button>
           <Button variant="light" size="sm" onClick={onClose} aria-label="Close">
-            &times;
+            ×
           </Button>
         </div>
       </div>
@@ -113,20 +113,22 @@ function RecordPane({ record, onClose }) {
           </div>
           <hr className="my-2" style={{ borderColor: '#d4cbb8' }} />
           <div className="text-muted small">
-            {sectionLabel} &middot; Row {record.row} &middot; Stone {record.stone}
+            {sectionLabel} · Row {record.row} · Stone {record.stone}
           </div>
         </div>
       </div>
 
-      {/* Photos Placeholder: one empty tile per photo until Cloudinary is set up */}
+      {/* Cloudinary Photo Carousel */}
       <div className="d-flex gap-2 mb-4 overflow-auto pb-2">
         {record.photos.map((photo) => (
-          <div
+          <img
             key={photo.cloudinary_public_id}
-            className="bg-light border rounded flex-shrink-0"
-            style={{ width: '120px', height: '120px', cursor: 'pointer' }}
-            title="Click to open lightbox (Mock)"
-          ></div>
+            src={`https://res.cloudinary.com/l02apduh/image/upload/c_fill,w_120,h_120/v1/${photo.cloudinary_public_id}`}
+            alt="Gravestone detail"
+            className="border rounded flex-shrink-0 shadow-sm"
+            style={{ width: '120px', height: '120px', objectFit: 'cover', cursor: 'pointer' }}
+            title="Click to open full view"
+          />
         ))}
       </div>
 
@@ -141,7 +143,7 @@ function RecordPane({ record, onClose }) {
         >
           Additional details
           <span style={{ transform: detailsOpen ? 'rotate(180deg)' : 'none', transition: 'transform 0.2s', display: 'inline-block' }}>
-            &#9662;
+            ▾
           </span>
         </Button>
 
