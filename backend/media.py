@@ -19,6 +19,10 @@ import cloudinary
 import cloudinary.uploader
 from dotenv import load_dotenv
 from PIL import Image, ImageOps
+import pillow_heif
+
+# Register HEIF/HEIC opener with Pillow
+pillow_heif.register_heif_opener()
 
 # ═════════════════════════════════════════════════════════════════════════════
 # SETTINGS
@@ -64,6 +68,10 @@ def process_image(image_path: Path) -> io.BytesIO:
     """
     with Image.open(image_path) as img:
         img = ImageOps.exif_transpose(img)
+        
+        # Convert transparent images (like PNG/HEIC with alpha) to RGB for JPEG saving
+        if img.mode in ("RGBA", "P"):
+            img = img.convert("RGB")
         
         if max(img.size) > MAX_DIMENSION:
             img.thumbnail((MAX_DIMENSION, MAX_DIMENSION), Image.Resampling.LANCZOS)
