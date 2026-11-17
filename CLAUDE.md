@@ -297,4 +297,4 @@ Every Jupyter notebook in the repository follows this style, modelled on the tea
 - Uploaded 2,621 photos to Cloudinary with extension-specific unique IDs to prevent collisions.
 - Synced Neon database via `import.py` with 794 graves, 703 persons, and all 2,621 photo records.
 - Updated `RecordPane.jsx` to dynamically render the Cloudinary photo carousel and dedicated portrait slot.
-- Set up Git LFS to track `video_header_3.mp4` for correct rendering on teammate machines and Render.
+- Set up Git LFS to track hero video for correct rendering on other machines and Render.
