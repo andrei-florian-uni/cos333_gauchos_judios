@@ -292,7 +292,7 @@ Every Jupyter notebook in the repository follows this style, modelled on the tea
 - Record pane (2026-11-10): `RecordPane.jsx` (N8 wireframe) shows the selected person's full record; `ExplorePage.jsx` narrows the results table to make room for it. It shows the person merged with their grave, picked out of the grave's `persons` by `person_id`, so shared stones open the right person. `recordDates.js` writes dates out from their parts (`24 September 1904`, `28 Elul 5756`, month 12 as Adar I in a leap year), and a derived date as a range with its shared parts written once (`10–11 February 1920`, `16 March 1889 – 15 March 1890`), with a note under it saying where it comes from (2026-11-11). The portrait, photo tiles and Share button are placeholders until Cloudinary and shared links (N5).
 - Record API (2026-11-10): `/api/graves/<ref>` (`db.fetch_grave_record`) returns the grave, every column of each person on it and its photos, main first; a malformed or unknown reference answers 404. `getRecord` in `api.js` calls it.
 
-### Cloudinary MVP & UI Integration
+### Cloudinary UI Integration
 - Fixed `media.py` to parse `CLOUDINARY_URL` and support HEIF/HEIC images using `pillow-heif`.
 - Uploaded 2,621 photos to Cloudinary with extension-specific unique IDs to prevent collisions.
 - Synced Neon database via `import.py` with 794 graves, 703 persons, and all 2,621 photo records.
