@@ -140,8 +140,9 @@ def process_graves(data_dir: Path) -> list[dict]:
                     kind = "main" if sort_order == 0 or "front" in photo_path.name.lower() else "other"
                     
                     # Create a clean, deterministic Cloudinary ID
-                    safe_filename = photo_path.stem.replace(" ", "_")
-                    public_id = f"{location['section']}_{location['row']}_{location['stone']}_{safe_filename}"
+                    safe_stem = photo_path.stem.replace(" ", "_")
+                    ext = photo_path.suffix.lower().lstrip(".")
+                    public_id = f"{location['section']}_{location['row']}_{location['stone']}_{safe_stem}_{ext}"
                     
                     print(f"Uploading {photo_path.name} to {public_id}...")
                     response = upload_to_cloudinary(photo_path, public_id)
