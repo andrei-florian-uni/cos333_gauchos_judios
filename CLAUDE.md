@@ -307,3 +307,11 @@ Every Jupyter notebook in the repository follows this style, modelled on the tea
 - Record API (2026-11-10): `/api/graves/<ref>` (`db.fetch_grave_record`) returns the grave, every column of each person on it and its photos, main first; a malformed or unknown reference answers 404. `getRecord` in `api.js` calls it.
 - Languages (2026-11-15): the landing page is in English and Spanish (Argentine, with *voseo*) through i18next and react-i18next, with the 🇦🇷 ES | 🇺🇸 EN toggle (`LanguageToggle.jsx`) in the hero's top right. The other pages stay in English until all features are in, and are translated last (team decision, 2026-11-15); Hebrew is still to come. The texts are in `src/locales/en.json` and `es.json`, which must keep the same keys, and are read with `t('…')` from `useTranslation`.
 - Language in the URL (2026-11-15): the choice lives only in `?lang=es` (English is left out of the URL), read with `useLanguage()`; `LanguageSync` in `App.jsx` makes i18next, `<html lang>` and the tab title follow it. The toggle replaces the history entry, so Back goes to the previous page, not the previous language. The landing page's links to `/explore` don't pass the language on yet, since that page is still in English.
+
+### Cloudinary UI Integration
+- Fixed `media.py` to parse `CLOUDINARY_URL` and support HEIF/HEIC images using `pillow-heif`.
+- Uploaded 2,621 photos to Cloudinary with extension-specific unique IDs to prevent collisions.
+- Synced Neon database via `import.py` with 794 graves, 703 persons, and all 2,621 photo records.
+- Updated `RecordPane.jsx` to dynamically render the Cloudinary photo carousel and dedicated portrait slot.
+- Photo lightbox (2026-11-18): `cloudinary.js` builds every photo URL (cloud `l02apduh`; thumbnails `c_fill` at twice their CSS size, full views `c_limit` at 2048 px). The record pane shows a photo whose public ID contains `portrait` beside the name and the others as a thumbnail strip; clicking either opens `PhotoLightbox.jsx`, a full-screen carousel (arrows, ← / → keys, swipe, filmstrip; portrait first) with zoom (click on a point, wheel, + / − / 0 keys and buttons; drag to pan, clamped to the photo's edges). Zoom resets on each new photo.
+- Set up Git LFS to track hero video for correct rendering on other machines and Render.
