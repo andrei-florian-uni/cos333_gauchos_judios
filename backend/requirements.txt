@@ -16,3 +16,5 @@ itsdangerous==2.2.0
 Jinja2==3.1.6
 MarkupSafe==3.0.4
 Werkzeug==3.1.9
+cloudinary==1.47.0
+pillow==13.0.0

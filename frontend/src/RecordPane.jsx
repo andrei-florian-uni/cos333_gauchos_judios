@@ -7,14 +7,19 @@
  * is. Every grave uses the same layout, and a field with no value on record is
  * shown redacted, as a quiet grey bar (Project Design › Application
  * Interface). A date worked out rather than carved is shown as a range, with a
- * note saying where it comes from. Until photos are on Cloudinary a note says
- * so in their place; the Share button is a placeholder until shared links (N5).
+ * note saying where it comes from. The grave's photos, from Cloudinary, show
+ * as a strip of thumbnails, with the portrait (if any) beside the name;
+ * clicking one opens PhotoLightbox, a full-screen carousel with zoom. A grave
+ * with no photos shows a note in their place. The Share button is a
+ * placeholder until shared links (N5).
  */
 
 import { useState } from 'react';
 import { Button, Collapse } from 'react-bootstrap';
 import { describeYears, formatHebrewDate, formatPersonDate, hasValue, isDerivedDate } from './recordDates.js';
 import { describeLocation, displayLatinName, personNames } from './labels.js';
+import { thumbnailUrl } from './cloudinary.js';
+import PhotoLightbox from './PhotoLightbox.jsx';
 
 /** The note under a derived date, saying where it comes from. */
 const DERIVED_NOTES = {
@@ -67,6 +72,8 @@ function DetailField({ label, value, isHebrew = false, note = null, wide = false
  */
 function RecordPane({ record, onClose }) {
   const [detailsOpen, setDetailsOpen] = useState(false);
+  // The photo open in the lightbox, as an index into lightboxPhotos, or null when it is shut.
+  const [lightboxIndex, setLightboxIndex] = useState(null);
 
   const names = personNames(record);
   const location = describeLocation(record);
@@ -79,62 +86,106 @@ function RecordPane({ record, onClose }) {
     record.death_day_he, record.death_month_he, record.death_year_he,
   );
 
+  // A photo whose public ID names it a portrait (photo names describe the
+  // view: front, text, portrait, ...) fills the portrait slot in the header.
+  const portraitPhoto = record.photos.find(
+    (photo) => photo.cloudinary_public_id.toLowerCase().includes('portrait'),
+  ) ?? null;
+
+  // The strip leaves the portrait out, as it is already in the header; the
+  // lightbox shows every photo, the portrait first.
+  const stripPhotos = record.photos.filter((photo) => photo !== portraitPhoto);
+  const lightboxPhotos = portraitPhoto ? [portraitPhoto, ...stripPhotos] : stripPhotos;
+
   return (
     <div className="record-pane shadow rounded bg-white p-3 d-flex flex-column h-100">
       {/* Header Controls */}
       <div className="d-flex justify-content-between align-items-center mb-4">
         <Button variant="link" className="p-0 text-decoration-none text-secondary fw-semibold" onClick={onClose}>
-          &larr; Results
+          ← Results
         </Button>
         <div>
           <Button variant="outline-secondary" size="sm" className="me-2">
             Share
           </Button>
           <Button variant="light" size="sm" onClick={onClose} aria-label="Close">
-            &times;
+            ×
           </Button>
         </div>
       </div>
 
-      {/* Header (N8): name, Hebrew name, dates and location */}
-      <div className="mb-3">
-        <div className="d-flex justify-content-between align-items-baseline gap-3 flex-wrap">
-          <h3
-            className="record-name h4 mb-1"
-            dir={names.primaryIsHebrew ? 'rtl' : undefined}
-            lang={names.primaryIsHebrew ? 'he' : undefined}
+      {/* Header (N8): portrait, name, Hebrew name, dates and location */}
+      <div className="d-flex align-items-start gap-3 mb-3">
+        {portraitPhoto ? (
+          <button
+            type="button"
+            className="record-portrait p-0 border rounded flex-shrink-0"
+            onClick={() => setLightboxIndex(0)}
+            aria-label="Open the portrait"
           >
-            {names.primary}
-          </h3>
-          {names.secondary && (
-            <div className="record-name-hebrew h5 mb-1" dir="rtl" lang="he">{names.secondary}</div>
-          )}
+            <img src={thumbnailUrl(portraitPhoto.cloudinary_public_id, 80)} alt="" />
+          </button>
+        ) : (
+          <div className="record-portrait bg-light border rounded flex-shrink-0" aria-hidden="true"></div>
+        )}
+        <div className="flex-grow-1 min-w-0">
+          <div className="d-flex justify-content-between align-items-baseline gap-3 flex-wrap">
+            <h3
+              className="record-name h4 mb-1"
+              dir={names.primaryIsHebrew ? 'rtl' : undefined}
+              lang={names.primaryIsHebrew ? 'he' : undefined}
+            >
+              {names.primary}
+            </h3>
+            {names.secondary && (
+              <div className="record-name-hebrew h5 mb-1" dir="rtl" lang="he">{names.secondary}</div>
+            )}
+          </div>
+          <div className="record-dates">
+            {years !== '—' && <span>{years}</span>}
+            {years !== '—' && hebrewDeathDate && <span className="mx-2 text-muted">&middot;</span>}
+            {hebrewDeathDate && <span>{hebrewDeathDate}</span>}
+          </div>
+          <hr className="my-2" style={{ borderColor: '#d4cbb8' }} />
+          <div className="text-muted small">{location}</div>
         </div>
-        <div className="record-dates">
-          {years !== '—' && <span>{years}</span>}
-          {years !== '—' && hebrewDeathDate && <span className="mx-2 text-muted">&middot;</span>}
-          {hebrewDeathDate && <span>{hebrewDeathDate}</span>}
-        </div>
-        <hr className="my-2" style={{ borderColor: '#d4cbb8' }} />
-        <div className="text-muted small">{location}</div>
       </div>
 
-      {/* Photos: one tile per photo once they are on Cloudinary; a note until then */}
-      {record.photos.length > 0 ? (
-        <div className="d-flex gap-2 mb-4 overflow-auto pb-2">
-          {record.photos.map((photo) => (
-            <div
-              key={photo.cloudinary_public_id}
-              className="bg-light border rounded flex-shrink-0"
-              style={{ width: '120px', height: '120px' }}
-            ></div>
-          ))}
+      {/* Photos: a strip of thumbnails; clicking one opens it in the lightbox */}
+      {stripPhotos.length > 0 ? (
+        <div className="record-photo-strip d-flex gap-2 mb-4 overflow-auto pb-2">
+          {stripPhotos.map((photo) => {
+            // The lightbox shows the portrait first, so a photo's place there
+            // can be one ahead of its place in the strip.
+            const lightboxPosition = lightboxPhotos.indexOf(photo);
+            return (
+              <button
+                type="button"
+                key={photo.cloudinary_public_id}
+                className="record-photo-tile p-0 border rounded flex-shrink-0"
+                onClick={() => setLightboxIndex(lightboxPosition)}
+                aria-label={`Open photograph ${lightboxPosition + 1} of ${lightboxPhotos.length}`}
+              >
+                <img src={thumbnailUrl(photo.cloudinary_public_id, 120)} alt="" loading="lazy" />
+              </button>
+            );
+          })}
         </div>
       ) : (
         <p className="record-photos-note small text-muted mb-4">
-          Photographs of this stone will appear here soon.
+          {portraitPhoto
+            ? 'This stone has no photographs besides the portrait.'
+            : 'Photographs of this stone will appear here soon.'}
         </p>
       )}
+
+      <PhotoLightbox
+        photos={lightboxPhotos}
+        index={lightboxIndex}
+        onIndexChange={setLightboxIndex}
+        onClose={() => setLightboxIndex(null)}
+        title={names.primary}
+      />
 
       {/* Additional Details Accordion */}
       <div className="mt-auto">
@@ -147,7 +198,7 @@ function RecordPane({ record, onClose }) {
         >
           Additional details
           <span style={{ transform: detailsOpen ? 'rotate(180deg)' : 'none', transition: 'transform 0.2s', display: 'inline-block' }}>
-            &#9662;
+            ▾
           </span>
         </Button>
 
