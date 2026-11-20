@@ -1,7 +1,7 @@
 /**
- * The language toggle (🇦🇷 ES | 🇺🇸 EN), in the top right of the landing
- * page's hero, as in the wireframes. Only the landing page is translated so
- * far; the other pages will carry the toggle in their header once they are.
+ * The language toggle (🇦🇷 ES | 🇺🇸 EN), at the right of the navigation bar
+ * (SiteNav.jsx) on the landing page. Only the landing page is translated so
+ * far; the bar will show the toggle on the other pages once they are.
  *
  * Choosing a language rewrites ?lang= in the current URL (language.js) and
  * keeps everything else in it, such as a search and its filters. It replaces

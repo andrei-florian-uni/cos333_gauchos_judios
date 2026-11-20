@@ -70,3 +70,18 @@ export function setLanguageParam(searchParams, language) {
   if (language !== DEFAULT_LANGUAGE) params.set(LANGUAGE_PARAM, language);
   return params;
 }
+
+/**
+ * Builds a link to one part of the landing page in a language, for the
+ * navigation bar (SiteNav.jsx), in the form React Router's `Link` takes.
+ *
+ * @param {string} id The id of the part, e.g. "history".
+ * @param {string} language The language code, e.g. "es".
+ * @returns {{pathname: string, search: string, hash: string}} The link's
+ *   target, e.g. { pathname: '/', search: '?lang=es', hash: '#history' };
+ *   the search is empty for the default language.
+ */
+export function landingLink(id, language) {
+  const query = setLanguageParam(new URLSearchParams(), language).toString();
+  return { pathname: '/', search: query ? `?${query}` : '', hash: `#${id}` };
+}

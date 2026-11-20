@@ -1,19 +1,23 @@
 /**
- * Explore page (/explore): the cemetery map (N4) filling the page, with the
- * search panel (N2, N3) and the record pane (N8) floating over its left side,
- * so the map stays visible on the right.
+ * Explore page (/explore): the cemetery map (N4) filling the page under the
+ * site's navigation bar (SiteNav.jsx), with the search panel (N2, N3) and the
+ * record pane (N8) floating over its left side, so the map stays visible on
+ * the right.
  *
  * On arrival the page loads every grave once from /api/map/graves, which
- * draws the map as well, and lists everyone in cemetery order
- * (sections women, children, men; rows in natural order; stones by number).
- * The filters alone narrow that list, here in the browser. A name search asks
- * /api/search for every match, best first, filtered by the API. Either list
- * shows PAGE_SIZE people at first, and "Show more" adds PAGE_SIZE at a time.
+ * draws the map and holds everyone the filters can list. Until a name or a
+ * filter is entered, the search panel stays collapsed: the search box, the
+ * Filters button and a short note on how to search. Filters alone list
+ * everyone who passes them, in cemetery order (sections women, children,
+ * men; rows in natural order; stones by number), here in the browser. A name
+ * search asks /api/search for every match, best first, filtered by the API.
+ * Either list shows PAGE_SIZE people at first, and "Show more" adds PAGE_SIZE
+ * at a time.
  *
  * The search lives in the URL (?q=…, plus any filters, such as
  * &death_from=1920&section=women), so a search from the landing page, a shared
  * link and the browser's Back button all show the right list; clearing the
- * name returns to everyone.
+ * name and the filters collapses the panel again.
  *
  * The map and the panels share one selection. Clicking a row, or a grave on
  * the map, loads the grave from /api/graves/<ref> and opens the record pane;
@@ -22,12 +26,13 @@
  */
 
 import { useState, useEffect, useMemo, useRef, useCallback } from 'react';
-import { Link, useSearchParams } from 'react-router-dom';
+import { useSearchParams } from 'react-router-dom';
 import { Spinner, Alert, Form, Button } from 'react-bootstrap';
 import { getMapGraves, getRecord, searchArchive } from './api.js';
 import CemeteryMap from './CemeteryMap.jsx';
 import FiltersMenu from './FiltersMenu.jsx';
 import RecordPane from './RecordPane.jsx';
+import SiteNav from './SiteNav.jsx';
 import { describeYears } from './recordDates.js';
 import { matchQuality, personNames } from './labels.js';
 import {
@@ -149,8 +154,9 @@ function SearchForm({ initialQuery, filters, onSearch }) {
 }
 
 /**
- * Renders the search box, the list (everyone, or the results of the name in
- * the URL) and, once a row is clicked, the record pane beside it.
+ * Renders the search box, the list (the results of the name in the URL, or
+ * everyone who passes its filters; none before either is entered) and, once
+ * a row or a grave is clicked, the record pane beside it.
  *
  * @returns {JSX.Element} The explore page.
  */
@@ -191,6 +197,10 @@ function ExplorePage() {
   // and is dropped.
   const requestedRecord = useRef(null);
   const paneOpen = Boolean(selectedRecord || recordLoading || recordError);
+  // Whether the record pane shows its additional details (N8). They are shown
+  // at first; a visitor who folds them away with "Show less" keeps them folded
+  // on the next record they open, until they leave the page.
+  const [detailsOpen, setDetailsOpen] = useState(true);
   // The panels floating over the map, so the map can keep clear of them.
   const panelsRef = useRef(null);
 
@@ -293,14 +303,21 @@ function ExplorePage() {
   }, []);
 
   // The list: the name search's results, best first, or everyone who passes
-  // the filters, in cemetery order.
+  // the filters, in cemetery order. It opens only once a name or a filter is
+  // entered (N2, N3); until then the panel is collapsed to the search box,
+  // the Filters button and a note on how to search. The archive still loads
+  // at once, for the map. If it fails, the error shows in the collapsed panel
+  // too, with "Try again", since the map has no way to load it again.
   const isNameSearch = urlQuery !== '';
+  const listOpen = isNameSearch || filtersSet;
   const everyoneFiltered = useMemo(
     () => archive.people.filter((person) => passesFilters(person, filters)),
     [archive.people, filters],
   );
-  const rows = isNameSearch ? shown.results : everyoneFiltered;
-  const listLoading = isNameSearch ? isLoading : archiveLoading;
+  let rows = [];
+  if (isNameSearch) rows = shown.results;
+  else if (filtersSet) rows = everyoneFiltered;
+  const listLoading = listOpen && (isNameSearch ? isLoading : archiveLoading);
   const listError = isNameSearch ? shown.error : archive.error;
   const count = rows.length;
 
@@ -316,7 +333,7 @@ function ExplorePage() {
   //   match, weak ones too, and lighting them all would cover most of the
   //   cemetery; "Show more" lights up the next rows with the list.
   // • filters alone: everyone who passes, to show where they lie.
-  // The full, unfiltered list would light up every grave, so it highlights none.
+  // With neither, the panel is collapsed and no grave is highlighted.
   const highlight = (isNameSearch || filtersSet) && !listLoading && !listError;
   const highlightedRows = isNameSearch ? rows.slice(0, visibleCount) : rows;
   const highlightKey = highlightedRows.map((person) => person.ref).join(',');
@@ -327,11 +344,7 @@ function ExplorePage() {
 
   return (
     <div className="explore-page">
-      <header className="explore-header">
-        <Link to="/" className="explore-home">&larr; Home</Link>
-        <span className="explore-wordmark">Los Gauchos Judíos</span>
-        <span className="explore-title">Cemetery explorer</span>
-      </header>
+      <SiteNav page="explore" />
 
       <div className="explore-body">
         <CemeteryMap
@@ -351,6 +364,15 @@ function ExplorePage() {
             <SearchForm key={urlQuery} initialQuery={urlQuery} filters={filters} onSearch={handleSearch} />
 
             <div className="explore-panel-scroll mt-3">
+              {/* The collapsed panel's note on how to search (N2) */}
+              {!listOpen && (
+                <p className="explore-help mb-0">
+                  Type your relative&apos;s name (first name, surname or both, in Spanish or
+                  Hebrew letters) and press Search. Use Filters to narrow the list by year of
+                  birth, year of death, or where the grave lies in the cemetery (section and row).
+                </p>
+              )}
+
               {listLoading && (
                 <div className="text-center py-4" role="status">
                   <Spinner animation="border" variant="success" />
@@ -360,7 +382,7 @@ function ExplorePage() {
 
               {/* Error; the full list can be loaded again */}
               {!listLoading && listError && (
-                <Alert variant="danger">
+                <Alert variant="danger" className={listOpen ? undefined : 'mt-3 mb-0'}>
                   {listError}
                   {!isNameSearch && (
                     <Button variant="link" className="p-0 ms-2 align-baseline" onClick={() => setArchiveAttempt((n) => n + 1)}>
@@ -466,7 +488,12 @@ function ExplorePage() {
               )}
               {!recordLoading && selectedRecord && (
                 <div className="explore-panel-scroll">
-                  <RecordPane record={selectedRecord} onClose={closeRecord} />
+                  <RecordPane
+                    record={selectedRecord}
+                    onClose={closeRecord}
+                    detailsOpen={detailsOpen}
+                    onToggleDetails={() => setDetailsOpen((open) => !open)}
+                  />
                 </div>
               )}
             </section>

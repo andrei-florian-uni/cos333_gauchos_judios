@@ -2,16 +2,19 @@
  * Gravestone Record View (N8): a detail panel showing a person's names, dates,
  * age at death, relatives, and epitaph in Spanish and Hebrew, alongside photos.
  *
- * The header gives the name (the Hebrew one first when the stone carries no
- * Latin name), the years and the Hebrew date of death, and where the grave
- * is. Every grave uses the same layout, and a field with no value on record is
- * shown redacted, as a quiet grey bar (Project Design › Application
- * Interface). A date worked out rather than carved is shown as a range, with a
- * note saying where it comes from. The grave's photos, from Cloudinary, show
- * as a strip of thumbnails, with the portrait (if any) beside the name;
- * clicking one opens PhotoLightbox, a full-screen carousel with zoom. A grave
- * with no photos shows a note in their place. The Share button is a
- * placeholder until shared links (N5).
+ * A band at the top holds the pane's controls (back to the results, Share,
+ * close) and the name (the Hebrew one first when the stone carries no Latin
+ * name); it stays in view as the record scrolls, so it is always clear whose
+ * record is open. Under it come the portrait, the years and the Hebrew date
+ * of death, and where the grave is. Every grave uses the same layout, and a
+ * field with no value on record reads "Not on record" on a quiet coloured
+ * bar. A date worked out rather than carved is shown as a range, with a note
+ * saying where it comes from. The additional details are shown at first;
+ * "Show less" folds them away and "Show more" brings them back. The grave's
+ * photos, from Cloudinary, show as a strip of thumbnails, with the portrait
+ * (if any) beside the dates; clicking one opens PhotoLightbox, a full-screen
+ * carousel with zoom. A grave with no photos shows a note in their place. The
+ * Share button is a placeholder until shared links (N5).
  */
 
 import { useState } from 'react';
@@ -28,9 +31,8 @@ const DERIVED_NOTES = {
 };
 
 /**
- * One labelled field of the Additional details section. A missing value is
- * shown redacted: a grey bar, read out as "Not on record" by screen readers;
- * zero is a value and is shown.
+ * One labelled field of the Additional details section. A missing value
+ * reads "Not on record" on a coloured bar; zero is a value and is shown.
  *
  * @param {object} props
  * @param {string} props.label The field's name.
@@ -53,9 +55,7 @@ function DetailField({ label, value, isHebrew = false, note = null, wide = false
           {note && <div className="small text-muted">{note}</div>}
         </>
       ) : (
-        <span className="redacted" title="Not on record">
-          <span className="visually-hidden">Not on record</span>
-        </span>
+        <span className="redacted">Not on record</span>
       )}
     </div>
   );
@@ -68,10 +68,13 @@ function DetailField({ label, value, isHebrew = false, note = null, wide = false
  * @param {object} props.record The grave from /api/graves/<ref> (ref, section,
  *   row, stone, photos), merged with the columns of the person selected on it.
  * @param {function(): void} props.onClose Closes the pane and clears the selection.
+ * @param {boolean} props.detailsOpen Whether the additional details are shown.
+ *   The explore page keeps this, so that the choice carries over from one
+ *   record to the next.
+ * @param {function(): void} props.onToggleDetails Shows or folds away the details.
  * @returns {JSX.Element} The record pane.
  */
-function RecordPane({ record, onClose }) {
-  const [detailsOpen, setDetailsOpen] = useState(false);
+function RecordPane({ record, onClose, detailsOpen, onToggleDetails }) {
   // The photo open in the lightbox, as an index into lightboxPhotos, or null when it is shut.
   const [lightboxIndex, setLightboxIndex] = useState(null);
 
@@ -98,24 +101,39 @@ function RecordPane({ record, onClose }) {
   const lightboxPhotos = portraitPhoto ? [portraitPhoto, ...stripPhotos] : stripPhotos;
 
   return (
-    <div className="record-pane shadow rounded bg-white p-3 d-flex flex-column h-100">
-      {/* Header Controls */}
-      <div className="d-flex justify-content-between align-items-center mb-4">
-        <Button variant="link" className="p-0 text-decoration-none text-secondary fw-semibold" onClick={onClose}>
-          ← Results
-        </Button>
-        <div>
-          <Button variant="outline-secondary" size="sm" className="me-2">
-            Share
+    <div className="record-pane shadow rounded bg-white p-3 d-flex flex-column">
+      {/* The band that stays at the top as the record scrolls (N8): the
+          controls, then the name and the Hebrew name */}
+      <div className="record-sticky-head">
+        <div className="d-flex justify-content-between align-items-center mb-2">
+          <Button variant="link" className="p-0 text-decoration-none text-secondary fw-semibold" onClick={onClose}>
+            ← Results
           </Button>
-          <Button variant="light" size="sm" onClick={onClose} aria-label="Close">
-            ×
-          </Button>
+          <div>
+            <Button variant="outline-secondary" size="sm" className="me-2">
+              Share
+            </Button>
+            <Button variant="light" size="sm" onClick={onClose} aria-label="Close">
+              ×
+            </Button>
+          </div>
+        </div>
+        <div className="d-flex justify-content-between align-items-baseline gap-3 flex-wrap">
+          <h3
+            className="record-name h4 mb-0"
+            dir={names.primaryIsHebrew ? 'rtl' : undefined}
+            lang={names.primaryIsHebrew ? 'he' : undefined}
+          >
+            {names.primary}
+          </h3>
+          {names.secondary && (
+            <div className="record-name-hebrew h5 mb-0" dir="rtl" lang="he">{names.secondary}</div>
+          )}
         </div>
       </div>
 
-      {/* Header (N8): portrait, name, Hebrew name, dates and location */}
-      <div className="d-flex align-items-start gap-3 mb-3">
+      {/* Under the band: portrait, dates and location */}
+      <div className="d-flex align-items-start gap-3 mt-3 mb-3">
         {portraitPhoto ? (
           <button
             type="button"
@@ -129,18 +147,6 @@ function RecordPane({ record, onClose }) {
           <div className="record-portrait bg-light border rounded flex-shrink-0" aria-hidden="true"></div>
         )}
         <div className="flex-grow-1 min-w-0">
-          <div className="d-flex justify-content-between align-items-baseline gap-3 flex-wrap">
-            <h3
-              className="record-name h4 mb-1"
-              dir={names.primaryIsHebrew ? 'rtl' : undefined}
-              lang={names.primaryIsHebrew ? 'he' : undefined}
-            >
-              {names.primary}
-            </h3>
-            {names.secondary && (
-              <div className="record-name-hebrew h5 mb-1" dir="rtl" lang="he">{names.secondary}</div>
-            )}
-          </div>
           <div className="record-dates">
             {years !== '—' && <span>{years}</span>}
             {years !== '—' && hebrewDeathDate && <span className="mx-2 text-muted">&middot;</span>}
@@ -187,20 +193,21 @@ function RecordPane({ record, onClose }) {
         title={names.primary}
       />
 
-      {/* Additional Details Accordion */}
+      {/* Additional details: shown at first, folded away by "Show less" */}
       <div className="mt-auto">
-        <Button
-          variant="link"
-          className="p-0 text-decoration-none text-dark fw-semibold mb-3 d-flex align-items-center gap-2"
-          onClick={() => setDetailsOpen(!detailsOpen)}
-          aria-controls="additional-details-collapse"
-          aria-expanded={detailsOpen}
-        >
-          Additional details
-          <span style={{ transform: detailsOpen ? 'rotate(180deg)' : 'none', transition: 'transform 0.2s', display: 'inline-block' }}>
-            ▾
-          </span>
-        </Button>
+        <div className="d-flex justify-content-between align-items-center mb-3">
+          <h4 className="h6 fw-semibold mb-0">Additional details</h4>
+          <Button
+            variant="link"
+            size="sm"
+            className="record-details-toggle p-0 text-decoration-none fw-semibold"
+            onClick={onToggleDetails}
+            aria-controls="additional-details-collapse"
+            aria-expanded={detailsOpen}
+          >
+            {detailsOpen ? 'Show less' : 'Show more'} <span aria-hidden="true">{detailsOpen ? '▴' : '▾'}</span>
+          </Button>
+        </div>
 
         <Collapse in={detailsOpen}>
           <div id="additional-details-collapse" className="pt-3 border-top">

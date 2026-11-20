@@ -326,6 +326,37 @@ export function aerialTiles(image, isDemo, defaultPath) {
 }
 
 /**
+ * Works out how far the map may be panned (Leaflet's `maxBounds`): the
+ * drawing (the aerial, or the demo grid) with a small margin on every side,
+ * plus room beside it on the sides the floating panels cover, so that every
+ * corner of the drawing can still be brought out from under them.
+ *
+ * The margin and the panels are a fixed number of screen pixels, which is
+ * fewer map units the closer the map zooms in (one map unit is 2^zoom screen
+ * pixels), so both are worked out for the map's zoom at the time. The margin
+ * thus looks the same at every zoom, rather than growing into screens of
+ * empty grey when the map zooms in.
+ *
+ * @param {number} width The drawing's width in map units (aerial pixels).
+ * @param {number} height The drawing's height in map units.
+ * @param {number} marginPixels The margin on each side, in screen pixels.
+ * @param {{left: number, bottom: number}} covered The screen pixels the
+ *   panels cover along the map's left edge (wide screens) and its bottom edge
+ *   (phones).
+ * @param {number} zoom The map's zoom.
+ * @returns {Array<Array<number>>} Leaflet bounds, [[south, west], [north, east]],
+ *   where a point [x, y] of the drawing sits at [-y, x].
+ */
+export function panBounds(width, height, marginPixels, covered, zoom) {
+  const unitsPerPixel = 1 / 2 ** zoom;
+  const margin = marginPixels * unitsPerPixel;
+  return [
+    [-height - margin - covered.bottom * unitsPerPixel, -margin - covered.left * unitsPerPixel],
+    [margin, width + margin],
+  ];
+}
+
+/**
  * Returns the area of the smallest box around an outline, to compare sizes.
  *
  * @param {Array<Array<number>>} outline Points as [x, y] in pixels.

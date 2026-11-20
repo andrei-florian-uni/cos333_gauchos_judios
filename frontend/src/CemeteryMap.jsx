@@ -23,6 +23,11 @@
  * The search and record panels float over the left of the map, so the map is
  * told which element covers it (`coveredRef`) and keeps what it focuses on in
  * the part still visible.
+ *
+ * The map is held to the drawing (MapBounds): it cannot be dragged, or zoomed
+ * out, far past the aerial into empty grey space, but keeps a small margin
+ * around it and room beside it for the panels, so each corner can still be
+ * brought into view.
  */
 
 import { memo, useCallback, useEffect, useMemo, useRef, useState } from 'react';
@@ -32,8 +37,8 @@ import {
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
 import {
-  MAX_MAP_ZOOM, MIN_MAP_ZOOM, aerialTiles, boundsOfGraves, legendEntries, mapLabels, resolveLayout,
-  shapeStyle,
+  MAX_MAP_ZOOM, MIN_MAP_ZOOM, aerialTiles, boundsOfGraves, legendEntries, mapLabels, panBounds,
+  resolveLayout, shapeStyle,
 } from './mapLayout.js';
 import { personNames } from './labels.js';
 
@@ -45,6 +50,7 @@ const MAX_FOCUS_ZOOM = 1;         // the closest the map zooms in on its own
 const MAX_COVERED_SHARE = 0.75;   // never treat more than this share of the map as covered
 const CHOOSER_ROOM = 280;         // pixels the chooser needs beside and below a click
 const ROW_LABEL_ZOOM = -1;        // row labels appear from this zoom in; farther out they crowd
+const PAN_MARGIN = 100;           // screen pixels of margin the map may show around the drawing
 
 /**
  * Writes a person's name for the map: the Latin name, else the Hebrew one, as
@@ -112,15 +118,15 @@ function MapLabels({ labels }) {
 }
 
 /**
- * Works out how much the map should keep free on each side when it moves, so
- * that what it shows does not end up under the floating panels. The panels
- * cover the map's left on a wide screen and its bottom on a narrow one.
+ * Measures how much of the map the floating panels cover: its left on a wide
+ * screen, its bottom on a narrow one, where they stack along the bottom.
  *
  * @param {L.Map} map The Leaflet map.
  * @param {{current: ?HTMLElement}} coveredRef The panels floating over the map.
- * @returns {object} Leaflet's paddingTopLeft and paddingBottomRight options.
+ * @returns {{left: number, bottom: number}} The pixels covered along the
+ *   map's left and bottom edges (one of them is 0).
  */
-function focusPadding(map, coveredRef) {
+function coveredSides(map, coveredRef) {
   const mapBox = map.getContainer().getBoundingClientRect();
   const panelsBox = coveredRef.current?.getBoundingClientRect();
   let left = 0;
@@ -133,10 +139,78 @@ function focusPadding(map, coveredRef) {
       left = Math.min(Math.max(0, panelsBox.right - mapBox.left), mapBox.width * MAX_COVERED_SHARE);
     }
   }
+  return { left, bottom };
+}
+
+/**
+ * Works out how much the map should keep free on each side when it moves, so
+ * that what it shows does not end up under the floating panels.
+ *
+ * @param {L.Map} map The Leaflet map.
+ * @param {{current: ?HTMLElement}} coveredRef The panels floating over the map.
+ * @returns {object} Leaflet's paddingTopLeft and paddingBottomRight options.
+ */
+function focusPadding(map, coveredRef) {
+  const { left, bottom } = coveredSides(map, coveredRef);
   return {
     paddingTopLeft: [left + EDGE_PADDING, EDGE_PADDING],
     paddingBottomRight: [EDGE_PADDING, bottom + EDGE_PADDING],
   };
+}
+
+/**
+ * Holds the map to the drawing, so it cannot be dragged or zoomed out into
+ * endless grey space. It draws nothing.
+ *
+ * • Panning stops at the drawing plus a margin of PAN_MARGIN screen pixels,
+ *   with room on the side the panels cover, so every corner can be brought
+ *   out from under them (panBounds in mapLayout.js).
+ * • Zooming out stops once the whole drawing fits in the part of the map the
+ *   panels leave visible.
+ * Both depend on the zoom and on the panels' size, so they are worked out
+ * again after every zoom, when the window is resized, and when the panels
+ * change size (a record opening or closing, the list opening).
+ *
+ * @param {object} props
+ * @param {number} props.width The drawing's width in map units.
+ * @param {number} props.height The drawing's height in map units.
+ * @param {{current: ?HTMLElement}} props.coveredRef The panels floating over the map.
+ * @returns {null} Nothing.
+ */
+function MapBounds({ width, height, coveredRef }) {
+  const map = useMap();
+
+  useEffect(() => {
+    /** Sets the farthest zoom and the pan limits for the map as it is now. */
+    const update = () => {
+      const covered = coveredSides(map, coveredRef);
+      // getBoundsZoom takes the padding as the pixels to leave free in all,
+      // across (both sides) and down (top and bottom).
+      const freePixels = [covered.left + 2 * EDGE_PADDING, covered.bottom + 2 * EDGE_PADDING];
+      const fitZoom = map.getBoundsZoom([[-height, 0], [0, width]], false, freePixels);
+      map.setMinZoom(Math.max(MIN_MAP_ZOOM, fitZoom));
+      // Set only when they change: setting them makes Leaflet pull the view
+      // back inside at once, which would cut short a move under way (such as
+      // the flight to a grave just opened) for no reason.
+      const limits = L.latLngBounds(panBounds(width, height, PAN_MARGIN, covered, map.getZoom()));
+      if (!map.options.maxBounds || !limits.equals(map.options.maxBounds, 0.5)) {
+        map.setMaxBounds(limits);
+      }
+    };
+
+    update();
+    map.on('zoomend resize', update);
+    // The panels' size changes without the map's, so they are watched apart.
+    const panels = coveredRef.current;
+    const observer = panels && 'ResizeObserver' in window ? new ResizeObserver(update) : null;
+    if (observer) observer.observe(panels);
+    return () => {
+      map.off('zoomend resize', update);
+      if (observer) observer.disconnect();
+    };
+  }, [map, width, height, coveredRef]);
+
+  return null;
 }
 
 /**
@@ -202,10 +276,10 @@ const ShapeOutline = memo(function ShapeOutline({ shape, isMatch, isSelected, on
 });
 
 /**
- * Moves the map: at first to show every grave, then to the selected grave
- * when one is opened, and to all the search matches when a new search
- * finishes (unless a grave is open). Each time it keeps clear of the panels.
- * It draws nothing.
+ * Moves the map: at first to show the whole drawing (the full aerial), then
+ * to the selected grave when one is opened, and to all the search matches
+ * when a new search finishes (unless a grave is open). Each time it keeps
+ * clear of the panels. It draws nothing.
  *
  * @param {object} props
  * @param {Array<Array<number>>} props.fullBounds The whole drawing, as Leaflet bounds.
@@ -224,10 +298,13 @@ function MapFocus({ fullBounds, graves, selectedRef, matchRefs, coveredRef }) {
     selectedNow.current = selectedRef;
   }, [selectedRef]);
 
-  // At first, show the whole cemetery beside the panels rather than under them.
+  // At first, show the whole aerial beside the panels rather than under them.
+  // The move is made at once, not animated: there is nothing to animate from,
+  // and a move still under way would be cut short when MapBounds sets the
+  // pan limits.
   useEffect(() => {
-    map.fitBounds(boundsOfGraves(graves) || fullBounds, focusPadding(map, coveredRef));
-  }, [map, graves, fullBounds, coveredRef]);
+    map.fitBounds(fullBounds, { ...focusPadding(map, coveredRef), animate: false });
+  }, [map, fullBounds, coveredRef]);
 
   useEffect(() => {
     const grave = selectedRef && graves.find((g) => g.ref === selectedRef);
@@ -436,6 +513,7 @@ function CemeteryMap({ mapData, loadError, matchRefs, selectedRef, onOpenRecord,
           minZoom={MIN_MAP_ZOOM}
           maxZoom={MAX_MAP_ZOOM}
           zoomSnap={0.25}
+          maxBoundsViscosity={1}
           zoomControl={false}
           attributionControl={false}
           className="cemetery-map-canvas"
@@ -453,6 +531,9 @@ function CemeteryMap({ mapData, loadError, matchRefs, selectedRef, onOpenRecord,
           ))}
           {labels && <MapLabels labels={labels} />}
           <MapFocus fullBounds={fullBounds} graves={layout.graves} selectedRef={selectedRef} matchRefs={matchRefs} coveredRef={coveredRef} />
+          {/* After MapFocus, so the first view is in place before any pan
+              limits exist; the limits, worked out for its zoom, then fit it */}
+          <MapBounds width={layout.width} height={layout.height} coveredRef={coveredRef} />
           <ChooserCloser onClose={closeChooser} />
         </MapContainer>
       )}

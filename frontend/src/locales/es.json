@@ -5,32 +5,43 @@
     "searchPlaceholder": "Buscá un nombre...",
     "searchButton": "Buscar"
   },
+  "nav": {
+    "home": "Inicio",
+    "history": "Historia",
+    "princeton": "Delegación de Princeton",
+    "timeline": "Cronología",
+    "explore": "Explorar el archivo",
+    "menu": "Menú"
+  },
   "landing": {
     "hero": {
-      "lead": "Lugar de descanso de las familias judías que trabajaron la tierra en Colonia Lucienville desde 1894. Hoy, 788 de sus tumbas están fotografiadas y se pueden buscar por nombre.",
+      "lead": "Lugar de descanso de las familias judías que trabajaron la tierra en Colonia Lucienville desde 1894. Hoy, 788 de sus más de 2.000 tumbas están fotografiadas y se pueden buscar por nombre. Un próximo viaje va a documentar el resto del cementerio.",
       "exploreMap": "Explorar el mapa del cementerio",
       "learnMore": "Conocé más",
       "pauseVideo": "Pausar",
       "playVideo": "Reproducir"
     },
     "history": {
+      "heading": "Un poco de historia…",
+      "sourcesLink": "Las fuentes están al pie de la página",
       "colonies": {
-        "heading": "Agricultores judíos en la pampa argentina",
+        "heading": "La llegada de los agricultores judíos a la pampa argentina",
         "p1": "A fines del siglo XIX, una ola de pogromos recorrió el Imperio ruso y golpeó a la población judía que vivía allí desde hacía siglos. El barón Maurice de Hirsch, un filántropo judío alemán, quiso ayudar a los judíos perseguidos asentándolos como agricultores en el inmenso campo argentino. En 1891 fundó la Jewish Colonization Association (JCA), que se propuso comprar tierras y crear colonias agrícolas para los judíos de Europa del Este.",
         "p2": "Colonia Lucienville, que lleva el nombre del único hijo del barón, quien murió antes que sus padres, se fundó en 1894 cerca de la estación de tren de Basavilbaso, en Entre Ríos. Las primeras familias llegaron de Jersón y Besarabia, en lo que hoy es el sur de Ucrania y Moldavia. Criaron ganado y cultivaron la tierra, fundaron instituciones comunitarias judías e incluso crearon la primera cooperativa agrícola de la Argentina. Alberto Gerchunoff, destacado escritor argentino que se crió en las colonias judías, acuñó la expresión \"los gauchos judíos\" para describir a los judíos de Europa del Este que se adaptaron a las duras condiciones del trabajo agrícola en la llanura argentina. A lo largo del siglo XX, la mayoría de los descendientes de la comunidad se fue de las colonias y se dispersó por la Argentina y el resto del mundo."
       },
       "cemetery": {
-        "p1": "Una de las primeras instituciones que creó la comunidad fue el cementerio judío, fundado en 1895, un año después de la llegada de las primeras familias. El cementerio y la comunidad también se conocen como Novibuco, por Novyi Buh, la ciudad ucraniana de la que venían muchos de los primeros colonos. Con unas 2.500 lápidas, es el cementerio judío más grande de Colonia Lucienville.",
+        "heading": "La fundación del Cementerio Israelita, Colonia N.º 1",
+        "p1": "Una de las primeras instituciones que creó la comunidad fue el cementerio judío, fundado en 1895, un año después de la llegada de las primeras familias. El cementerio y la comunidad también se conocen como Novibuco, por Novyi Buh, la ciudad ucraniana de la que venían muchos de los primeros colonos. Con más de 2.000 lápidas, es el cementerio judío más grande de Colonia Lucienville.",
         "p2": "El cementerio tiene una sección de hombres, una de mujeres y una de niños. En las partes más nuevas las secciones se mezclan un poco, pero la disposición sigue en gran medida esta separación tradicional. Las lápidas tienen inscripciones en español, hebreo e ídish, y guardan registros valiosos que echan luz sobre una comunidad en transición: desde sus raíces en los shtetl de Europa del Este hasta la modernización y la secularización que vinieron después. Hoy, el cementerio está al cuidado de la comunidad judía de Basavilbaso (Asociación Israelita Basavilbaso)."
-      },
-      "project": {
-        "p1": "En enero de 2026, un equipo de estudiantes de Princeton viajó a Basavilbaso con el apoyo del Princeton Institute for International and Regional Studies (PIIRS), el Effron Center y el Departamento de Español y Portugués. En colaboración con cuidadores locales y referentes de la comunidad judía de la Argentina, limpiaron y fotografiaron 788 tumbas, que abarcan las secciones de mujeres y de niños del cementerio.",
-        "p2": "Después, las fotos se ordenaron, se transcribieron con herramientas de IA y se revisaron a mano. Un equipo de estudiantes se formó para convertir los registros en un archivo de acceso público, donde cualquiera puede buscar un nombre en español o en hebreo, o recorrer el mapa aéreo del cementerio. Más adelante, la sección de hombres se va a documentar y sumar al archivo.",
-        "sourcesLink": "Las fuentes están al pie de la página"
       }
     },
+    "project": {
+      "heading": "Los Gauchos Judíos – Recordando a las comunidades agrícolas judías de Argentina",
+      "subheading": "Universidad de Princeton, proyecto liderado por estudiantes",
+      "p1": "En enero de 2026, un equipo de estudiantes de Princeton viajó a Basavilbaso con el apoyo del Princeton Institute for International and Regional Studies (PIIRS), el Effron Center y el Departamento de Español y Portugués. En colaboración con cuidadores locales y referentes de la comunidad judía de la Argentina, limpiaron y fotografiaron 788 tumbas, que abarcan las secciones de mujeres y de niños del cementerio.",
+      "p2": "Después, las fotos se ordenaron, se transcribieron con herramientas de IA y se revisaron a mano. Un equipo de estudiantes se formó para convertir los registros en un archivo de acceso público, donde cualquiera puede buscar un nombre en español o en hebreo, o recorrer el mapa aéreo del cementerio. Más adelante, la sección de hombres se va a documentar y sumar al archivo."
+    },
     "carousel": {
-      "heading": "Del trabajo de campo",
       "credit": "Fotos: equipo de Los Gauchos Judíos, enero de 2026",
       "previous": "Anterior",
       "next": "Siguiente",
@@ -41,7 +52,7 @@
         },
         "aerial": {
           "title": "El cementerio desde el aire",
-          "caption": "Un muro de ladrillo rodea unas 2.500 lápidas en pleno campo, en las afueras de Basavilbaso."
+          "caption": "Un muro de ladrillo rodea más de 2.000 lápidas en pleno campo, en las afueras de Basavilbaso."
         },
         "stones": {
           "title": "Rostros y estrellas",

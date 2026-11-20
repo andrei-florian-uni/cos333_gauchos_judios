@@ -28,14 +28,10 @@ html, body {
   padding: 4.5rem 0;
 }
 
-.hero-wordmark {
-  position: absolute;
-  top: 2rem;
-  left: 2.5rem;
-  font-weight: 600;
-  font-size: 1.1rem;
-  z-index: 5;
-  letter-spacing: 0.5px;
+/* The parts the navigation bar leads to (#home, #history, #princeton,
+   #timeline) stop just below the bar when scrolled to, not under it. */
+.landing-anchor {
+  scroll-margin-top: var(--site-nav-height);
 }
 
 .hero-video {
@@ -138,9 +134,31 @@ html, body {
   background-color: rgba(255, 255, 255, 0.1);
 }
 
-/* Informational Text Section */
+/* H3: the historical background, then the Princeton project. Each part opens
+   with a section title (the project's with a subtitle under it), and each
+   passage sits under its own title, all in one centred column of text. */
 .info-section {
   padding: 6rem 0 3rem 0;
+}
+
+.landing-section-header {
+  margin-bottom: 3.5rem;
+}
+
+.landing-section-title {
+  font-family: Georgia, "Times New Roman", Times, serif;
+  font-size: clamp(1.9rem, 4vw, 2.5rem);
+  font-weight: bold;
+  line-height: 1.2;
+  color: #2b2b2b;
+  margin-bottom: 0;
+}
+
+.landing-section-subtitle {
+  margin: 0.75rem 0 0 0;
+  font-size: 1.15rem;
+  letter-spacing: 0.5px;
+  color: #3e5a4d;
 }
 
 .info-block {
@@ -162,18 +180,14 @@ html, body {
   margin-bottom: 2rem;
 }
 
-.info-date {
-  font-size: 3.5rem;
-  font-family: Georgia, serif;
-  color: #3e5a4d;
-  line-height: 1;
-  margin-bottom: 0.5rem;
-}
-
+/* A passage's title, above its text */
 .info-heading {
+  font-family: Georgia, "Times New Roman", Times, serif;
   font-weight: bold;
-  font-size: 1.25rem;
+  font-size: 1.5rem;
+  line-height: 1.25;
   color: #2b2b2b;
+  margin-bottom: 1.25rem;
 }
 
 .info-body {
@@ -183,20 +197,31 @@ html, body {
   color: #333;
 }
 
-/* Carousel Section */
-.history-section {
-  padding: 2rem 0 5rem 0;
+/* The Princeton project: its account and the fieldwork carousel on one tinted
+   band, so they read as one block. The carousel keeps its full width. */
+.project-section {
+  padding: 6rem 0 5rem 0;
+  background-color: #f4efe4;
+  border-top: 1px solid #e2d9c5;
+  border-bottom: 1px solid #e2d9c5;
 }
 
 .carousel-container {
   max-width: 1000px;
-  margin: 0 auto;
+  margin: 2rem auto 0 auto;
 }
 
 .archive-carousel {
   border-radius: 0.25rem;
   overflow: hidden;
   background-color: #f4efe4;
+}
+
+/* Every fieldwork photo is 3:2. Holding that shape before a photo loads keeps
+   the timeline below in place, so the navigation bar's #timeline lands on it. */
+.archive-carousel img {
+  aspect-ratio: 3 / 2;
+  object-fit: cover;
 }
 
 .carousel-caption-below {
@@ -508,8 +533,30 @@ html, body {
   overflow-y: auto;
 }
 
+/* At least as tall as its scrolling panel, and as tall as its content beyond
+   that: a fixed height would end the white background, and the sticky band's
+   hold, after the first screen of a long record. */
 .record-pane {
   border: 1px solid #e2d9c5;
+  min-height: 100%;
+}
+
+/* The band of controls and name that stays at the top as the record scrolls.
+   It reaches over the pane's padding (1rem, Bootstrap's p-3) to its edges,
+   so the content scrolling under it is hidden. */
+.record-sticky-head {
+  position: sticky;
+  top: 0;
+  z-index: 2;
+  margin: -1rem -1rem 0 -1rem;
+  padding: 1rem 1rem 0.75rem 1rem;
+  background-color: #ffffff;
+  border-bottom: 1px solid #e2d9c5;
+  border-radius: 0.375rem 0.375rem 0 0;
+}
+
+.record-details-toggle {
+  color: #3e5a4d;
 }
 
 .record-pane .border-secondary-subtle {
@@ -603,58 +650,101 @@ html, body {
   color: #1a2321;
 }
 
-/* The toggle's place in the hero: top right, level with the wordmark on the left */
-.hero-language {
-  position: absolute;
-  top: 1.75rem;
-  right: 2.5rem;
-  z-index: 5;
+/* ── Navigation bar (SiteNav.jsx): one solid dark bar on both pages ─────── */
+:root {
+  --site-nav-height: 56px;    /* the bar's height on a wide screen */
 }
 
-/* Phones: pull the wordmark and the toggle towards the edges so they fit side by side */
-@media (max-width: 576px) {
-  .hero-wordmark {
-    left: 1rem;
-  }
+/* Bootstrap's navbar colours, set for the dark bar */
+.site-nav {
+  --bs-navbar-color: rgba(255, 255, 255, 0.8);
+  --bs-navbar-hover-color: #ffffff;
+  --bs-navbar-active-color: #ffffff;
+  --bs-navbar-brand-color: #ffffff;
+  --bs-navbar-brand-hover-color: #ffffff;
+  min-height: var(--site-nav-height);
+  background-color: #1a2321;
+}
 
-  .hero-language {
-    right: 1rem;
+.site-nav-brand {
+  font-weight: 600;
+  font-size: 1.1rem;
+  letter-spacing: 0.5px;
+}
+
+.site-nav .nav-link {
+  font-weight: 500;
+}
+
+/* The page the visitor is on is underlined */
+.site-nav .nav-link.active {
+  box-shadow: inset 0 -2px 0 #a8c3b6;
+}
+
+/* "Explore the archive" leads to the other page, so it is drawn as a button */
+.site-nav .site-nav-explore {
+  border: 1px solid rgba(255, 255, 255, 0.6);
+  border-radius: 50rem;
+  margin-left: 0.5rem;
+}
+
+.site-nav .site-nav-explore:hover {
+  background-color: rgba(255, 255, 255, 0.1);
+}
+
+/* On the explore page it is filled in, as the language toggle's current language is */
+.site-nav .site-nav-explore.active {
+  background-color: rgba(255, 255, 255, 0.85);
+  color: #1a2321;
+  box-shadow: none;
+}
+
+.site-nav-language {
+  margin-left: 1rem;
+}
+
+/* On a wide screen the buttons sit in a row, so they get room to either side */
+@media (min-width: 768px) {
+  .site-nav .navbar-nav .nav-link {
+    padding-left: 0.75rem;
+    padding-right: 0.75rem;
   }
 }
 
-/* ── Explore page: the map fills the page under a slim header, and the ──────
-   search and record panels float over its left two-thirds (one third each). */
+/* Phones: the buttons fold into a menu that opens under the bar. The menu
+   lies over the page rather than pushing it down: otherwise, when it closes
+   after a choice, the page would jump up by the menu's height and the part
+   just scrolled to would end up above the screen. */
+@media (max-width: 767.98px) {
+  .site-nav .navbar-collapse {
+    position: absolute;
+    top: 100%;
+    left: 0;
+    right: 0;
+    padding: 0.5rem 1rem 0.75rem 1rem;
+    background-color: #1a2321;
+    box-shadow: 0 0.5rem 1rem rgba(0, 0, 0, 0.25);
+  }
+
+  .site-nav .site-nav-explore {
+    align-self: flex-start;
+    margin: 0.25rem 0 0 0;
+    padding-left: 0.9rem;
+    padding-right: 0.9rem;
+  }
+
+  .site-nav-language {
+    margin: 0.75rem 0 0 0;
+  }
+}
+
+/* ── Explore page: the map fills the page under the navigation bar, and ─────
+   the search and record panels float over its left two-thirds (one third each). */
 .explore-page {
   position: fixed;
   inset: 0;
   display: flex;
   flex-direction: column;
-}
-
-.explore-header {
-  flex: 0 0 48px;
-  display: flex;
-  align-items: center;
-  gap: 1.25rem;
-  padding: 0 1rem;
-  background-color: #1a2321;
-  color: #ffffff;
-}
-
-.explore-home {
-  color: #ffffff;
-  font-weight: 600;
-  text-decoration: none;
-}
-
-.explore-home:hover {
-  color: #ffffff;
-  text-decoration: underline;
-}
-
-.explore-title {
-  font-family: Georgia, "Times New Roman", Times, serif;
-  opacity: 0.85;
 }
 
 .explore-body {
@@ -703,6 +793,13 @@ html, body {
   flex: 1 1 auto;
   min-height: 0;
   overflow-y: auto;
+}
+
+/* The collapsed search panel's note on how to search (N2) */
+.explore-help {
+  font-size: 0.85rem;
+  line-height: 1.5;
+  color: #5a5346;
 }
 
 /* Results list (N3) */
@@ -862,23 +959,6 @@ html, body {
   }
 }
 
-/* ── Explore header: the same wordmark as the landing page ───────────────── */
-.explore-wordmark {
-  font-weight: 600;
-  letter-spacing: 0.5px;
-}
-
-.explore-header .explore-title {
-  font-family: inherit;
-  opacity: 0.7;
-  margin-left: -0.5rem;
-}
-
-.explore-header .explore-title::before {
-  content: "·";
-  margin-right: 0.75rem;
-}
-
 /* ── Record pane header ──────────────────────────────────────────────────── */
 .record-name {
   font-family: Georgia, "Times New Roman", Times, serif;
@@ -902,14 +982,14 @@ html, body {
   border-radius: 0.375rem;
 }
 
-/* A field with no value on record, shown redacted: a short grey bar */
+/* A field with no value on record: "Not on record" on a quiet coloured bar */
 .redacted {
   display: inline-block;
-  width: 4.5rem;
-  height: 0.7rem;
+  padding: 0.05rem 0.5rem;
   background-color: #e3dccd;
   border-radius: 2px;
-  vertical-align: middle;
+  color: #5a5346;
+  font-size: 0.8rem;
 }
 
 /* ── How well a search matched, in words ─────────────────────────────────── */
@@ -1030,18 +1110,6 @@ html, body {
 
 .detail-field {
   margin-bottom: 0.25rem;
-}
-
-/* ── Phones: the explore header stays on one line ────────────────────────── */
-@media (max-width: 575.98px) {
-  .explore-header {
-    white-space: nowrap;
-    gap: 0.9rem;
-  }
-
-  .explore-header .explore-title {
-    display: none;
-  }
 }
 
 /* Record pane photos: the portrait beside the name and the thumbnail strip */
